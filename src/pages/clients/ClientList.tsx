@@ -1,25 +1,47 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Search, Users, Instagram, Trash2, ChevronDown } from 'lucide-react'
+import { Plus, Search, Users, Instagram, Trash2, ChevronDown, Palette } from 'lucide-react'
 import { useClients, useDeleteClient } from '@/hooks/useClients'
 import { useToast } from '@/components/ui/toast'
+import { supabase } from '@/integrations/supabase/client'
 
-// ─── Gradientes por índice (cíclico) ─────────────────────────────────────────
+// ─── Gradientes disponíveis para o banner ────────────────────────────────────
 
-const BANNER_GRADIENTS = [
-  'linear-gradient(135deg, #f9a8d4 0%, #c084fc 100%)',
-  'linear-gradient(135deg, #fde68a 0%, #86efac 100%)',
-  'linear-gradient(135deg, #93c5fd 0%, #a78bfa 100%)',
-  'linear-gradient(135deg, #fdba74 0%, #f9a8d4 100%)',
-  'linear-gradient(135deg, #67e8f9 0%, #818cf8 100%)',
-  'linear-gradient(135deg, #fcd34d 0%, #fb923c 100%)',
-  'linear-gradient(135deg, #6ee7b7 0%, #38bdf8 100%)',
-  'linear-gradient(135deg, #f0abfc 0%, #818cf8 100%)',
+const GRADIENTS = [
+  { id: 'pink-purple',   value: 'linear-gradient(135deg, #f9a8d4 0%, #c084fc 100%)',   preview: ['#f9a8d4', '#c084fc'] },
+  { id: 'yellow-green',  value: 'linear-gradient(135deg, #fde68a 0%, #86efac 100%)',   preview: ['#fde68a', '#86efac'] },
+  { id: 'blue-purple',   value: 'linear-gradient(135deg, #93c5fd 0%, #a78bfa 100%)',   preview: ['#93c5fd', '#a78bfa'] },
+  { id: 'orange-pink',   value: 'linear-gradient(135deg, #fdba74 0%, #f9a8d4 100%)',   preview: ['#fdba74', '#f9a8d4'] },
+  { id: 'cyan-indigo',   value: 'linear-gradient(135deg, #67e8f9 0%, #818cf8 100%)',   preview: ['#67e8f9', '#818cf8'] },
+  { id: 'amber-orange',  value: 'linear-gradient(135deg, #fcd34d 0%, #fb923c 100%)',   preview: ['#fcd34d', '#fb923c'] },
+  { id: 'teal-sky',      value: 'linear-gradient(135deg, #6ee7b7 0%, #38bdf8 100%)',   preview: ['#6ee7b7', '#38bdf8'] },
+  { id: 'fuchsia-indigo',value: 'linear-gradient(135deg, #f0abfc 0%, #818cf8 100%)',   preview: ['#f0abfc', '#818cf8'] },
+  { id: 'rose-amber',    value: 'linear-gradient(135deg, #fda4af 0%, #fbbf24 100%)',   preview: ['#fda4af', '#fbbf24'] },
+  { id: 'lime-cyan',     value: 'linear-gradient(135deg, #bef264 0%, #67e8f9 100%)',   preview: ['#bef264', '#67e8f9'] },
+  { id: 'navy-blue',     value: 'linear-gradient(135deg, #1a1a2e 0%, #3b82f6 100%)',   preview: ['#1a1a2e', '#3b82f6'] },
+  { id: 'coral-sunset',  value: 'linear-gradient(135deg, #e94560 0%, #fcd34d 100%)',   preview: ['#e94560', '#fcd34d'] },
 ]
 
-function getBanner(index: number) {
-  return BANNER_GRADIENTS[index % BANNER_GRADIENTS.length]
+const DEFAULT_GRADIENT_ID = 'pink-purple'
+
+function loadBannerGradient(clientId: string): string {
+  try {
+    const saved = localStorage.getItem(`banner_${clientId}`)
+    const found = GRADIENTS.find(g => g.id === saved)
+    return found ? found.value : GRADIENTS[0].value
+  } catch { return GRADIENTS[0].value }
+}
+
+function saveBannerGradient(clientId: string, gradientId: string) {
+  try { localStorage.setItem(`banner_${clientId}`, gradientId) } catch {}
+}
+
+function getDefaultGradientId(clientId: string): string {
+  try {
+    const saved = localStorage.getItem(`banner_${clientId}`)
+    return GRADIENTS.find(g => g.id === saved) ? saved! : DEFAULT_GRADIENT_ID
+  } catch { return DEFAULT_GRADIENT_ID }
 }
 
 // ─── Status config ────────────────────────────────────────────────────────────
@@ -35,11 +57,20 @@ const STATUS_CFG: Record<string, { label: string; dot: string; badge: string }> 
 }
 
 const SORT_OPTIONS = [
-  { value: 'nome_az',   label: 'Nome (A-Z)' },
-  { value: 'nome_za',   label: 'Nome (Z-A)' },
-  { value: 'recente',   label: 'Mais recentes' },
-  { value: 'antigo',    label: 'Mais antigos' },
+  { value: 'nome_az',  label: 'Nome (A-Z)' },
+  { value: 'nome_za',  label: 'Nome (Z-A)' },
+  { value: 'recente',  label: 'Mais recentes' },
+  { value: 'antigo',   label: 'Mais antigos' },
 ]
+
+// ─── Tipos de stats ───────────────────────────────────────────────────────────
+
+interface ClientStats {
+  pendentes:        number
+  aprovados:        number
+  ajuste_solicitado: number
+  reprovado:        number
+}
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 
@@ -47,14 +78,69 @@ export function ClientList() {
   const { data: clients = [], isLoading } = useClients()
   const deleteClient = useDeleteClient()
   const { toast } = useToast()
-  const navigate = useNavigate()
+  const navigate  = useNavigate()
 
-  const [search, setSearch]   = useState('')
-  const [filter, setFilter]   = useState<'all' | 'ativo' | 'pausado' | 'encerrado'>('all')
-  const [sort, setSort]       = useState('nome_az')
+  const [search, setSearch]     = useState('')
+  const [filter, setFilter]     = useState<'all' | 'ativo' | 'pausado' | 'encerrado'>('all')
+  const [sort, setSort]         = useState('nome_az')
   const [showSort, setShowSort] = useState(false)
+  const [stats, setStats]       = useState<Record<string, ClientStats>>({})
 
-  const filtered = (clients)
+  // Gradiente por client id (salvo no localStorage)
+  const [banners, setBanners]   = useState<Record<string, string>>({})
+  const [pickerOpen, setPickerOpen] = useState<string | null>(null) // clientId com picker aberto
+
+  // ── Carrega gradientes salvos quando clients chegam ───────────────────────
+  useEffect(() => {
+    if (!clients.length) return
+    const map: Record<string, string> = {}
+    clients.forEach(c => { map[c.id] = loadBannerGradient(c.id) })
+    setBanners(map)
+  }, [clients.map(c => c.id).join()])
+
+  // ── Carrega stats do planner por cliente ──────────────────────────────────
+  useEffect(() => {
+    if (!clients.length) return
+    async function fetchStats() {
+      const { data } = await supabase
+        .from('planner')
+        .select('client_id, approval_status')
+        .in('client_id', clients.map(c => c.id))
+
+      if (!data) return
+      const map: Record<string, ClientStats> = {}
+      clients.forEach(c => {
+        map[c.id] = { pendentes: 0, aprovados: 0, ajuste_solicitado: 0, reprovado: 0 }
+      })
+      data.forEach((row: any) => {
+        if (!row.client_id || !map[row.client_id]) return
+        const as = row.approval_status
+        if (!as || as === 'pendente_aprovacao' || as === 'ajuste_realizado') {
+          map[row.client_id].pendentes++
+        } else if (as === 'aprovado') {
+          map[row.client_id].aprovados++
+        } else if (as === 'ajuste_solicitado') {
+          map[row.client_id].ajuste_solicitado++
+        } else if (as === 'reprovado') {
+          map[row.client_id].reprovado++
+        }
+      })
+      setStats(map)
+    }
+    fetchStats()
+  }, [clients.map(c => c.id).join()])
+
+  // ── Troca gradiente ───────────────────────────────────────────────────────
+  function changeBanner(clientId: string, gradientId: string) {
+    const found = GRADIENTS.find(g => g.id === gradientId)
+    if (!found) return
+    saveBannerGradient(clientId, gradientId)
+    setBanners(prev => ({ ...prev, [clientId]: found.value }))
+    setPickerOpen(null)
+  }
+
+  // ── Filtragem e ordenação ─────────────────────────────────────────────────
+  const filtered = clients
     .filter(c => {
       const q = search.toLowerCase()
       const matchSearch =
@@ -67,10 +153,10 @@ export function ClientList() {
       return matchSearch && matchFilter
     })
     .sort((a, b) => {
-      if (sort === 'nome_az')  return a.company_name.localeCompare(b.company_name)
-      if (sort === 'nome_za')  return b.company_name.localeCompare(a.company_name)
-      if (sort === 'recente')  return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      if (sort === 'antigo')   return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      if (sort === 'nome_az') return a.company_name.localeCompare(b.company_name)
+      if (sort === 'nome_za') return b.company_name.localeCompare(a.company_name)
+      if (sort === 'recente') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      if (sort === 'antigo')  return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       return 0
     })
 
@@ -106,7 +192,6 @@ export function ClientList() {
 
         {/* ── Toolbar ───────────────────────────────────────────────────────── */}
         <div className="flex items-center gap-3 flex-wrap">
-          {/* Search */}
           <div className="relative flex-1 min-w-[220px] max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#a0a0a0]" />
             <input
@@ -118,7 +203,7 @@ export function ClientList() {
             />
           </div>
 
-          {/* Sort dropdown */}
+          {/* Sort */}
           <div className="relative">
             <button
               onClick={() => setShowSort(o => !o)}
@@ -171,7 +256,6 @@ export function ClientList() {
       {/* ── Content ───────────────────────────────────────────────────────────── */}
       <div className="px-6 pb-10">
 
-        {/* Loading */}
         {isLoading && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
             {[...Array(6)].map((_, i) => (
@@ -186,7 +270,6 @@ export function ClientList() {
           </div>
         )}
 
-        {/* Empty */}
         {!isLoading && filtered.length === 0 && (
           <div className="flex flex-col items-center justify-center py-24 gap-4">
             <div className="w-16 h-16 rounded-2xl bg-white border border-[#e8e8e8] flex items-center justify-center shadow-sm">
@@ -212,13 +295,16 @@ export function ClientList() {
           </div>
         )}
 
-        {/* Grid */}
         {!isLoading && filtered.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
             <AnimatePresence>
-              {filtered.map((client, i) => {
-                const cfg = STATUS_CFG[client.status] || STATUS_CFG.ativo
-                const initials = client.company_name.slice(0, 2).toUpperCase()
+              {filtered.map(client => {
+                const cfg       = STATUS_CFG[client.status] || STATUS_CFG.ativo
+                const initials  = client.company_name.slice(0, 2).toUpperCase()
+                const banner    = banners[client.id] || GRADIENTS[0].value
+                const clientStats = stats[client.id] || { pendentes: 0, aprovados: 0, ajuste_solicitado: 0, reprovado: 0 }
+                const isPickerOpen = pickerOpen === client.id
+                const savedGradientId = getDefaultGradientId(client.id)
 
                 return (
                   <motion.div
@@ -226,25 +312,64 @@ export function ClientList() {
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.97 }}
-                    transition={{ delay: i * 0.04 }}
                     whileHover={{ y: -3, transition: { duration: 0.15 } }}
                     onClick={() => navigate(`/clients/${client.id}`)}
-                    className="bg-white rounded-2xl border border-[#e8e8e8] shadow-sm hover:shadow-md transition-shadow cursor-pointer overflow-hidden group"
+                    className="bg-white rounded-2xl border border-[#e8e8e8] shadow-sm hover:shadow-md transition-shadow cursor-pointer overflow-hidden group relative"
                   >
-                    {/* Banner */}
+                    {/* ── Banner ──────────────────────────────────────────── */}
                     <div
                       className="relative h-24 flex-shrink-0"
-                      style={{ background: getBanner(i) }}
+                      style={{ background: banner }}
                     >
-                      {/* Delete button */}
+                      {/* Botão paleta de cores */}
+                      <button
+                        onClick={e => { e.stopPropagation(); setPickerOpen(isPickerOpen ? null : client.id) }}
+                        className="absolute top-3 left-3 w-7 h-7 rounded-full bg-white/30 hover:bg-white/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+                        title="Mudar cor do banner"
+                      >
+                        <Palette className="w-3.5 h-3.5 text-white" />
+                      </button>
+
+                      {/* Botão deletar */}
                       <button
                         onClick={e => handleDelete(e, client.id, client.company_name)}
                         className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/30 hover:bg-white/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
                       >
-                        <Trash2 className="w-3.5 h-3.5 text-[#0f0f0f]" />
+                        <Trash2 className="w-3.5 h-3.5 text-white" />
                       </button>
 
-                      {/* Avatar overlapping banner */}
+                      {/* Picker de gradiente */}
+                      {isPickerOpen && (
+                        <>
+                          <div
+                            className="fixed inset-0 z-30"
+                            onClick={e => { e.stopPropagation(); setPickerOpen(null) }}
+                          />
+                          <div
+                            className="absolute top-10 left-3 z-40 bg-white rounded-2xl shadow-xl border border-[#e8e8e8] p-3"
+                            onClick={e => e.stopPropagation()}
+                          >
+                            <p className="text-[10px] font-semibold text-[#a0a0a0] uppercase tracking-wide mb-2">Cor do banner</p>
+                            <div className="grid grid-cols-6 gap-1.5">
+                              {GRADIENTS.map(g => (
+                                <button
+                                  key={g.id}
+                                  onClick={e => { e.stopPropagation(); changeBanner(client.id, g.id) }}
+                                  className="w-7 h-7 rounded-full transition-transform hover:scale-110 relative"
+                                  style={{ background: `linear-gradient(135deg, ${g.preview[0]} 0%, ${g.preview[1]} 100%)` }}
+                                  title={g.id}
+                                >
+                                  {savedGradientId === g.id && (
+                                    <span className="absolute inset-0 rounded-full ring-2 ring-white ring-offset-1 ring-offset-[#1a1a2e]" />
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Avatar */}
                       <div className="absolute -bottom-6 left-5">
                         {client.logo_url ? (
                           <img
@@ -263,7 +388,7 @@ export function ClientList() {
                       </div>
                     </div>
 
-                    {/* Body */}
+                    {/* ── Body ────────────────────────────────────────────── */}
                     <div className="pt-9 px-5 pb-5">
 
                       {/* Nome + status */}
@@ -295,23 +420,23 @@ export function ClientList() {
                       {/* Divider */}
                       <div className="border-t border-[#f0f0f0] mb-3" />
 
-                      {/* Stats grid */}
+                      {/* Stats grid — dados reais do planner */}
                       <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="text-[11px] text-[#a0a0a0]">Rascunho</span>
-                          <span className="text-[11px] font-semibold text-[#737373]">0</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] text-[#a0a0a0]">Ajuste</span>
-                          <span className="text-[11px] font-semibold text-orange-500">0</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] text-[#a0a0a0]">Aprovação</span>
-                          <span className="text-[11px] font-semibold text-amber-500">0</span>
+                          <span className="text-[11px] text-[#a0a0a0]">Pendentes</span>
+                          <span className="text-[11px] font-semibold text-amber-500">{clientStats.pendentes}</span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-[11px] text-[#a0a0a0]">Aprovados</span>
-                          <span className="text-[11px] font-semibold text-emerald-500">0</span>
+                          <span className="text-[11px] font-semibold text-emerald-500">{clientStats.aprovados}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] text-[#a0a0a0]">Aj. Solicitado</span>
+                          <span className="text-[11px] font-semibold text-orange-500">{clientStats.ajuste_solicitado}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] text-[#a0a0a0]">Reprovado</span>
+                          <span className="text-[11px] font-semibold text-red-400">{clientStats.reprovado}</span>
                         </div>
                       </div>
 
