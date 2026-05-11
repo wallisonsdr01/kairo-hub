@@ -211,89 +211,127 @@ function ContentPickerDialog({
 
 interface HoverState { items: PlannerItem[]; top: number; left: number }
 
+// ─── Conteúdo da prévia (compartilhado entre mobile/desktop) ─────────────────
+
+function TooltipContent({
+  items,
+  onOpenItem,
+}: {
+  items: PlannerItem[]
+  onOpenItem: (item: PlannerItem) => void
+}) {
+  return (
+    <>
+      <div className="px-3 pt-2.5 pb-1.5 border-b border-white/[0.07] flex items-center justify-between">
+        <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
+          {items.length} {items.length === 1 ? 'conteúdo' : 'conteúdos'}
+        </p>
+      </div>
+      <div className="overflow-y-auto max-h-[55vh] sm:max-h-[340px] p-2 space-y-1.5">
+        {items.map(item => {
+          const as_ = (item.approval_status || 'pendente_aprovacao') as ApprovalStatus
+          const accent = getApprovalAccent(item)
+          const thumb = item.attachments?.find(a => a.file_type.startsWith('image/'))
+          return (
+            <button
+              key={item.id}
+              onClick={() => onOpenItem(item)}
+              className="w-full text-left rounded-lg border border-white/[0.08] bg-white/[0.04] active:bg-white/[0.12] hover:bg-white/[0.08] transition-colors overflow-hidden"
+              style={{ borderLeftColor: accent, borderLeftWidth: 3 }}
+            >
+              {thumb && (
+                <img src={thumb.file_url} alt="" className="w-full h-24 object-cover" draggable={false} />
+              )}
+              <div className="px-2.5 py-2">
+                <p className="font-semibold text-white text-[12px] leading-snug mb-1.5">{item.title}</p>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {item.client && (
+                    <div className="flex items-center gap-1">
+                      <Building2 className="w-2.5 h-2.5 text-gray-500 flex-shrink-0" />
+                      <span className="text-[10px] text-gray-400 truncate max-w-[100px]">{item.client.company_name}</span>
+                    </div>
+                  )}
+                  <span
+                    className="text-[10px] px-1.5 py-0.5 rounded font-medium"
+                    style={{ backgroundColor: `${accent}20`, color: accent }}
+                  >
+                    {contentTypeLabels[item.content_type as ContentType]}
+                  </span>
+                  <span className={`ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                    as_ === 'aprovado' ? 'bg-green-500/15 text-green-400' :
+                    as_ === 'ajuste_solicitado' ? 'bg-orange-500/15 text-orange-400' :
+                    as_ === 'ajuste_realizado' ? 'bg-blue-500/15 text-blue-400' :
+                    as_ === 'reprovado' ? 'bg-red-500/15 text-red-400' :
+                    'bg-yellow-500/10 text-yellow-400'
+                  }`}>
+                    {approvalLabel[as_]}
+                  </span>
+                </div>
+                {item.notes && (
+                  <p className="text-[10px] text-gray-400 line-clamp-1 mt-1">{item.notes}</p>
+                )}
+              </div>
+            </button>
+          )
+        })}
+      </div>
+    </>
+  )
+}
+
+// ─── DayTooltip: modal centrado no mobile, posicionado no desktop ─────────────
+
 function DayTooltip({
   state,
   onMouseEnter,
   onMouseLeave,
   onOpenItem,
+  onClose,
 }: {
   state: HoverState
   onMouseEnter: () => void
   onMouseLeave: () => void
   onOpenItem: (item: PlannerItem) => void
+  onClose: () => void
 }) {
   return (
-    <div
-      className="fixed z-50 pointer-events-auto"
-      style={{ top: state.top, left: state.left }}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-    >
-      <motion.div
-        initial={{ opacity: 0, scale: 0.97, y: 4 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.97, y: 4 }}
-        transition={{ duration: 0.13 }}
-        className="bg-[#13131f] border border-white/10 rounded-xl shadow-2xl w-[270px] text-xs text-white overflow-hidden"
+    <>
+      {/* ── MOBILE: modal centralizado com backdrop ─────────────────── */}
+      <div
+        className="sm:hidden fixed inset-0 z-50 flex items-center justify-center px-5"
+        style={{ backgroundColor: 'rgba(0,0,0,0.45)' }}
+        onClick={onClose}
       >
-        {/* Header */}
-        <div className="px-3 pt-2.5 pb-1.5 border-b border-white/[0.07]">
-          <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
-            {state.items.length} {state.items.length === 1 ? 'conteúdo' : 'conteúdos'}
-          </p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 8 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 8 }}
+          transition={{ duration: 0.15 }}
+          className="bg-[#13131f] border border-white/10 rounded-2xl w-full max-w-[360px] overflow-hidden shadow-2xl text-white"
+          onClick={e => e.stopPropagation()}
+        >
+          <TooltipContent items={state.items} onOpenItem={item => { onClose(); onOpenItem(item) }} />
+        </motion.div>
+      </div>
 
-        {/* Scrollable items */}
-        <div className="overflow-y-auto max-h-[340px] p-2 space-y-1.5">
-          {state.items.map(item => {
-            const as_ = (item.approval_status || 'pendente_aprovacao') as ApprovalStatus
-            const accent = getApprovalAccent(item)
-            const thumb = item.attachments?.find(a => a.file_type.startsWith('image/'))
-            return (
-              <button
-                key={item.id}
-                onClick={() => onOpenItem(item)}
-                className="w-full text-left rounded-lg border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] transition-colors overflow-hidden"
-                style={{ borderLeftColor: accent, borderLeftWidth: 3 }}
-              >
-                {thumb && (
-                  <img src={thumb.file_url} alt="" className="w-full h-20 object-cover" draggable={false} />
-                )}
-                <div className="px-2.5 py-2">
-                  <p className="font-semibold text-white text-[11px] leading-snug mb-1">{item.title}</p>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {item.client && (
-                      <div className="flex items-center gap-1">
-                        <Building2 className="w-2.5 h-2.5 text-gray-500 flex-shrink-0" />
-                        <span className="text-[9px] text-gray-400 truncate max-w-[80px]">{item.client.company_name}</span>
-                      </div>
-                    )}
-                    <span
-                      className="text-[9px] px-1.5 py-0.5 rounded font-medium"
-                      style={{ backgroundColor: `${accent}20`, color: accent }}
-                    >
-                      {contentTypeLabels[item.content_type as ContentType]}
-                    </span>
-                    <span className={`ml-auto text-[9px] font-medium px-1.5 py-0.5 rounded ${
-                      as_ === 'aprovado' ? 'bg-green-500/15 text-green-400' :
-                      as_ === 'ajuste_solicitado' ? 'bg-orange-500/15 text-orange-400' :
-                      as_ === 'ajuste_realizado' ? 'bg-blue-500/15 text-blue-400' :
-                      as_ === 'reprovado' ? 'bg-red-500/15 text-red-400' :
-                      'bg-yellow-500/10 text-yellow-400'
-                    }`}>
-                      {approvalLabel[as_]}
-                    </span>
-                  </div>
-                  {item.notes && (
-                    <p className="text-[9px] text-gray-400 line-clamp-1 mt-1">{item.notes}</p>
-                  )}
-                </div>
-              </button>
-            )
-          })}
-        </div>
-      </motion.div>
-    </div>
+      {/* ── DESKTOP: tooltip posicionado ao lado da célula ─────────── */}
+      <div
+        className="hidden sm:block fixed z-50 pointer-events-auto"
+        style={{ top: state.top, left: state.left }}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.97, y: 4 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.97, y: 4 }}
+          transition={{ duration: 0.13 }}
+          className="bg-[#13131f] border border-white/10 rounded-xl shadow-2xl w-[270px] text-xs text-white overflow-hidden"
+        >
+          <TooltipContent items={state.items} onOpenItem={onOpenItem} />
+        </motion.div>
+      </div>
+    </>
   )
 }
 
@@ -894,6 +932,9 @@ export function Planner() {
         client_id: selectedClientFilter ?? null,
       }))
       setOpen(true)
+    } else if (isMobile) {
+      // No mobile: abre o modal centralizado de prévia
+      setHover({ items: dayItems, top: 0, left: 0 })
     } else {
       setSelectedDayDate(day)
       setDayDetailsOpen(true)
@@ -1212,8 +1253,8 @@ export function Planner() {
                     hasItems={hasItems}
                     dragging={!!draggingItem}
                     onDayClick={() => handleDayClick(day, dayItems)}
-                    onMouseEnter={e => { cancelHideTimer(); handleDayMouseEnter(e, dayItems) }}
-                    onMouseLeave={() => { if (!draggingItem) startHideTimer() }}
+                    onMouseEnter={e => { if (!isMobile) { cancelHideTimer(); handleDayMouseEnter(e, dayItems) } }}
+                    onMouseLeave={() => { if (!draggingItem && !isMobile) startHideTimer() }}
                   >
                     {/* Número do dia */}
                     <div className={`
@@ -1276,7 +1317,7 @@ export function Planner() {
         </div>
       </div>
 
-      {/* Hover Tooltip */}
+      {/* Hover Tooltip / Mobile Modal */}
       <AnimatePresence>
         {hover && (
           <DayTooltip
@@ -1284,6 +1325,7 @@ export function Planner() {
             onMouseEnter={cancelHideTimer}
             onMouseLeave={startHideTimer}
             onOpenItem={item => { setHover(null); openItemView(item) }}
+            onClose={() => setHover(null)}
           />
         )}
       </AnimatePresence>
