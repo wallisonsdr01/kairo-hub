@@ -409,8 +409,19 @@ function getPlannerBadge(item: PlannerItem): { label: string; cls: string } {
     case 'aprovado':         return { label: 'Aprovado',    cls: 'bg-green-500/15 text-green-400 border border-green-500/20' }
     case 'reprovado':        return { label: 'Reprovado',   cls: 'bg-red-500/15 text-red-400 border border-red-500/20' }
     case 'ajuste_solicitado':return { label: 'Ajuste',      cls: 'bg-orange-500/15 text-orange-400 border border-orange-500/20' }
-    case 'ajuste_realizado': return { label: 'Em Revisão',  cls: 'bg-yellow-500/15 text-yellow-400 border border-yellow-500/20' }
-    default:                 return { label: 'Em Aprovação',cls: 'bg-zinc-700/60 text-zinc-400 border border-zinc-600/30' }
+    case 'ajuste_realizado': return { label: 'Ajuste Feito',cls: 'bg-blue-500/15 text-blue-400 border border-blue-500/20' }
+    default:                 return { label: 'Em Aprovação',cls: 'bg-yellow-500/15 text-yellow-400 border border-yellow-500/20' }
+  }
+}
+
+function getCardAccentColor(item: PlannerItem): string {
+  if (item.status === 'publicado') return '#10b981'  // emerald
+  switch (item.approval_status) {
+    case 'aprovado':          return '#4ade80'  // green-400
+    case 'reprovado':         return '#f87171'  // red-400
+    case 'ajuste_solicitado': return '#fb923c'  // orange-400
+    case 'ajuste_realizado':  return '#60a5fa'  // blue-400
+    default:                  return '#facc15'  // yellow-400 (pendente)
   }
 }
 
@@ -423,7 +434,7 @@ function getWeekSummaryBadge(items: PlannerItem[]): { label: string; cls: string
   if (hasAjuste)     return { label: 'Ajuste',       cls: 'bg-orange-500/15 text-orange-400' }
   if (allPublished)  return { label: 'Publicado',    cls: 'bg-emerald-500/15 text-emerald-400' }
   if (allApproved)   return { label: 'Aprovado',     cls: 'bg-green-500/15 text-green-400' }
-  return               { label: 'Em Aprovação',  cls: 'bg-zinc-700/60 text-zinc-400' }
+  return               { label: 'Em Aprovação',  cls: 'bg-yellow-500/15 text-yellow-400' }
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -801,14 +812,19 @@ export function ClientProfile() {
                 )
               }
               return (
-                <div className="overflow-x-auto pb-2 -mx-1 px-1">
-                  <div className="flex gap-3" style={{ minWidth: `${Math.max(weeks.length * 260, 520)}px` }}>
-                    {weeks.map(week => {
+                <div className="overflow-x-auto pb-2">
+                  <div className="flex" style={{ minWidth: `${Math.max(weeks.length * 272, 544)}px` }}>
+                    {weeks.map((week, wi) => {
                       const summary = getWeekSummaryBadge(week.items)
+                      const isLast = wi === weeks.length - 1
                       return (
-                        <div key={week.key} className="flex-shrink-0 w-[248px]">
+                        <div
+                          key={week.key}
+                          className={`flex-shrink-0 w-[272px] px-4 ${!isLast ? 'border-r border-white/[0.07]' : ''}`}
+                          style={{ paddingLeft: wi === 0 ? 0 : undefined, paddingRight: isLast ? 0 : undefined }}
+                        >
                           {/* Week header */}
-                          <div className="flex items-start justify-between mb-2.5 px-1">
+                          <div className="flex items-start justify-between mb-3">
                             <div>
                               <p className="text-[13px] font-semibold text-zinc-200">{week.label}</p>
                               <p className="text-[11px] text-zinc-500 mt-0.5">{week.dateRange}</p>
@@ -822,49 +838,61 @@ export function ClientProfile() {
                           <div className="space-y-2">
                             {week.items.map(item => {
                               const badge = getPlannerBadge(item)
+                              const accent = getCardAccentColor(item)
                               const thumb = item.attachments?.find(a => a.file_type.startsWith('image/'))
                               return (
                                 <button
                                   key={item.id}
                                   onClick={() => { setSelectedPlannerItem(item); setPlannerItemOpen(true) }}
-                                  className="w-full text-left p-3 rounded-xl border border-white/[0.08] bg-[#13131f] hover:bg-[#1c1c30] hover:border-white/[0.15] transition-all group"
+                                  className="w-full text-left rounded-xl border border-white/[0.08] bg-[#13131f] hover:bg-[#1c1c30] hover:border-white/[0.15] transition-all group overflow-hidden"
                                 >
-                                  {/* Thumb (se houver) */}
-                                  {thumb && (
-                                    <img
-                                      src={thumb.file_url}
-                                      alt=""
-                                      className="w-full h-28 object-cover rounded-lg mb-2.5 border border-white/[0.06]"
-                                    />
-                                  )}
+                                  {/* Colored accent bar + content wrapper */}
+                                  <div className="flex">
+                                    {/* Left accent bar */}
+                                    <div className="w-[4px] flex-shrink-0 rounded-l-xl" style={{ backgroundColor: accent }} />
 
-                                  {/* Date */}
-                                  <p className="text-[10px] text-zinc-500 mb-1 font-medium tracking-wide">
-                                    {format(parseISO(item.scheduled_date), "dd MMM", { locale: ptBR }).replace('.', '')} · 18:00
-                                  </p>
+                                    {/* Card content */}
+                                    <div className="flex-1 min-w-0 p-3">
+                                      {/* Thumb (se houver) */}
+                                      {thumb && (
+                                        <img
+                                          src={thumb.file_url}
+                                          alt=""
+                                          className="w-full h-28 object-cover rounded-lg mb-2.5 border border-white/[0.06]"
+                                        />
+                                      )}
 
-                                  {/* Title */}
-                                  <p className="text-[12px] font-semibold text-zinc-100 leading-snug mb-2.5 line-clamp-2">
-                                    {item.title}
-                                  </p>
+                                      {/* Date */}
+                                      <p className="text-[10px] text-zinc-500 mb-1 font-medium tracking-wide">
+                                        {format(parseISO(item.scheduled_date), "dd MMM", { locale: ptBR }).replace('.', '')} · 18:00
+                                      </p>
 
-                                  {/* Bottom row: platform + type + status */}
-                                  <div className="flex items-center gap-1.5">
-                                    {/* Instagram icon */}
-                                    <div className="w-[18px] h-[18px] rounded-[5px] flex items-center justify-center flex-shrink-0"
-                                      style={{ background: 'linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045)' }}>
-                                      <Instagram className="w-2.5 h-2.5 text-white" />
+                                      {/* Title */}
+                                      <p className="text-[12px] font-semibold text-zinc-100 leading-snug mb-2.5 line-clamp-2">
+                                        {item.title}
+                                      </p>
+
+                                      {/* Bottom row: platform + type + status */}
+                                      <div className="flex items-center gap-1.5">
+                                        {/* Instagram icon */}
+                                        <div
+                                          className="w-[18px] h-[18px] rounded-[5px] flex items-center justify-center flex-shrink-0"
+                                          style={{ background: 'linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045)' }}
+                                        >
+                                          <Instagram className="w-2.5 h-2.5 text-white" />
+                                        </div>
+
+                                        {/* Content type */}
+                                        <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-white/[0.06] text-zinc-400 font-medium">
+                                          {contentTypeLabels[item.content_type] || item.content_type}
+                                        </span>
+
+                                        {/* Status badge — pushed right */}
+                                        <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-md font-semibold ${badge.cls}`}>
+                                          {badge.label}
+                                        </span>
+                                      </div>
                                     </div>
-
-                                    {/* Content type */}
-                                    <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-white/[0.06] text-zinc-400 font-medium">
-                                      {contentTypeLabels[item.content_type] || item.content_type}
-                                    </span>
-
-                                    {/* Status badge — pushed right */}
-                                    <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-md font-semibold ${badge.cls}`}>
-                                      {badge.label}
-                                    </span>
                                   </div>
                                 </button>
                               )
