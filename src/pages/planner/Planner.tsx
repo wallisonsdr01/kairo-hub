@@ -606,23 +606,57 @@ function DayItemCard({
 
 // ─── Drag & Drop primitives ───────────────────────────────────────────────────
 
-function DraggableChip({ item, disabled }: { item: PlannerItem; disabled: boolean }) {
+function getApprovalAccent(item: PlannerItem): string {
+  if (item.status === 'publicado') return '#10b981'
+  switch (item.approval_status) {
+    case 'aprovado':          return '#22c55e'
+    case 'ajuste_solicitado': return '#f97316'
+    case 'ajuste_realizado':  return '#3b82f6'
+    case 'reprovado':         return '#ef4444'
+    default:                  return '#eab308'
+  }
+}
+
+function CalendarCard({ item, disabled, onOpen }: { item: PlannerItem; disabled: boolean; onOpen: () => void }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: item.id, disabled })
-  const as_ = (item.approval_status || 'pendente_aprovacao') as ApprovalStatus
+  const accent = getApprovalAccent(item)
+  const thumb = item.attachments?.find(a => a.file_type.startsWith('image/'))
+
   return (
     <div
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      onClick={e => e.stopPropagation()}
-      style={{ touchAction: 'none' }}
-      className={`flex items-center gap-0.5 min-w-0 rounded transition-opacity select-none
-        ${isDragging ? 'opacity-0' : ''}
-        ${disabled ? '' : 'cursor-grab active:cursor-grabbing'}`}
+      style={{ touchAction: 'none', opacity: isDragging ? 0.2 : 1, borderLeftColor: accent }}
+      onClick={e => { e.stopPropagation(); onOpen() }}
+      className={`w-full rounded-[5px] border border-gray-200 border-l-[3px] bg-white shadow-sm overflow-hidden transition-all hover:shadow-md select-none
+        ${disabled ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'}`}
     >
-      <div className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full flex-shrink-0 ${statusColors[item.status as PlannerStatus]}`} />
-      <span className="text-gray-400 truncate text-[9px] sm:text-[10px] flex-1 min-w-0 hidden sm:block">{item.title}</span>
-      <div className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full flex-shrink-0 ${approvalDot[as_]}`} title={approvalLabel[as_]} />
+      {/* Thumbnail — só visível em telas sm+ */}
+      {thumb && (
+        <img
+          src={thumb.file_url}
+          alt=""
+          className="hidden sm:block w-full h-12 md:h-14 object-cover"
+          draggable={false}
+        />
+      )}
+      <div className="px-1 sm:px-1.5 py-0.5 sm:py-1">
+        <p className="text-[8px] sm:text-[10px] font-semibold text-gray-800 truncate leading-tight">{item.title}</p>
+        <div className="hidden sm:flex items-center gap-1 mt-0.5">
+          <span
+            className="text-[8px] px-1 py-0.5 rounded font-medium"
+            style={{ backgroundColor: `${accent}18`, color: accent }}
+          >
+            {contentTypeLabels[item.content_type as ContentType]}
+          </span>
+        </div>
+        {/* Mobile: só mostra dois pontinhos de status */}
+        <div className="flex sm:hidden items-center gap-1 mt-0.5">
+          <div className="w-1 h-1 rounded-full flex-shrink-0" style={{ backgroundColor: accent }} />
+          <span className="text-[8px] text-gray-500 truncate">{item.title}</span>
+        </div>
+      </div>
     </div>
   )
 }
@@ -652,7 +686,7 @@ function DroppableDay({
       onMouseEnter={e => isCurrentMonth && !dragging && onMouseEnter(e)}
       onMouseLeave={() => !dragging && onMouseLeave()}
       className={`
-        min-h-[52px] sm:min-h-[90px] p-0.5 sm:p-1.5 rounded sm:rounded-lg border transition-all
+        min-h-[52px] sm:min-h-[130px] p-0.5 sm:p-1.5 rounded sm:rounded-lg border transition-all
         ${isCurrentMonth
           ? `cursor-pointer ${isOver
               ? 'border-blue-400/60 bg-blue-500/10 scale-[1.02]'
@@ -1167,12 +1201,19 @@ export function Planner() {
                     `}>
                       {format(day, 'd')}
                     </div>
-                    <div className="space-y-0.5">
-                      {dayItems.slice(0, 2).map(item => (
-                        <DraggableChip key={item.id} item={item} disabled={isMobile} />
+                    <div className="space-y-1">
+                      {dayItems.slice(0, 3).map(item => (
+                        <CalendarCard
+                          key={item.id}
+                          item={item}
+                          disabled={isMobile}
+                          onOpen={() => openItemView(item)}
+                        />
                       ))}
-                      {dayItems.length > 2 && (
-                        <p className="text-[8px] sm:text-[10px] text-gray-500 font-medium">+{dayItems.length - 2}</p>
+                      {dayItems.length > 3 && (
+                        <p className="text-[8px] sm:text-[10px] text-gray-500 font-medium pl-0.5">
+                          +{dayItems.length - 3} mais
+                        </p>
                       )}
                     </div>
                   </DroppableDay>
@@ -1194,12 +1235,19 @@ export function Planner() {
         </DragOverlay>
         </DndContext>
 
-        {/* Legend */}
-        <div className="flex gap-3 mt-4 flex-wrap">
-          {(Object.entries(statusColors) as [PlannerStatus, string][]).map(([status, color]) => (
-            <div key={status} className="flex items-center gap-1.5 text-xs text-gray-400">
-              <div className={`w-2 h-2 rounded-full ${color}`} />
-              {statusLabels[status]}
+        {/* Legend — cores de aprovação */}
+        <div className="flex gap-4 mt-4 flex-wrap">
+          {([
+            { label: 'Pendente',         color: '#eab308' },
+            { label: 'Aprovado',         color: '#22c55e' },
+            { label: 'Ajuste solicitado',color: '#f97316' },
+            { label: 'Ajuste realizado', color: '#3b82f6' },
+            { label: 'Reprovado',        color: '#ef4444' },
+            { label: 'Publicado',        color: '#10b981' },
+          ]).map(({ label, color }) => (
+            <div key={label} className="flex items-center gap-1.5 text-xs text-gray-500">
+              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+              {label}
             </div>
           ))}
         </div>
