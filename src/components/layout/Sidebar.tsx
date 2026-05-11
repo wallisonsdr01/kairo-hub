@@ -24,27 +24,40 @@ const navItems = [
 
 function HexMark({ size = 28 }: { size?: number }) {
   return (
-    <div
-      className="flex-shrink-0 flex items-center justify-center"
-      style={{
-        width: size,
-        height: size,
-        background: 'linear-gradient(145deg, #1a1a2e 0%, #252550 100%)',
-        clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
-      }}
-    >
-      <span style={{
-        color: '#ffffff',
-        fontWeight: 800,
-        fontSize: size * 0.38,
-        letterSpacing: '-0.03em',
-        fontFamily: "'Playfair Display', Georgia, serif",
-        fontStyle: 'italic',
-        lineHeight: 1,
-        userSelect: 'none',
-      }}>
-        K
-      </span>
+    <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
+      {/* Hexágono */}
+      <div
+        className="w-full h-full flex items-center justify-center"
+        style={{
+          background: 'linear-gradient(145deg, #1a1a2e 0%, #252550 100%)',
+          clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
+        }}
+      >
+        <span style={{
+          color: '#ffffff',
+          fontWeight: 800,
+          fontSize: size * 0.38,
+          letterSpacing: '-0.03em',
+          fontFamily: "'Playfair Display', Georgia, serif",
+          fontStyle: 'italic',
+          lineHeight: 1,
+          userSelect: 'none',
+        }}>
+          K
+        </span>
+      </div>
+      {/* Ponto coral — detalhe da logo oficial */}
+      <div
+        className="absolute rounded-full"
+        style={{
+          width: size * 0.22,
+          height: size * 0.22,
+          background: '#e94560',
+          top: size * 0.12,
+          right: size * 0.12,
+          boxShadow: `0 0 ${size * 0.1}px rgba(233,69,96,0.5)`,
+        }}
+      />
     </div>
   )
 }

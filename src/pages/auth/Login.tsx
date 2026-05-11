@@ -9,35 +9,56 @@ import { useToast } from '@/components/ui/toast'
 
 // ── Kairo Hub wordmark ─────────────────────────────────────────────────────────
 
-function Wordmark({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
-  const hexSize = { sm: 36, md: 48, lg: 60 }[size]
-  const titleSize = { sm: '22px', md: '30px', lg: '38px' }[size]
-  const subSize   = { sm: '10px', md: '11px', lg: '12px' }[size]
+function Wordmark({
+  size = 'md',
+  theme = 'dark',
+}: {
+  size?: 'sm' | 'md' | 'lg'
+  theme?: 'dark' | 'light'   // dark = texto escuro (fundo claro) | light = texto branco (fundo escuro)
+}) {
+  const hexSize   = { sm: 36, md: 48, lg: 72 }[size]
+  const titleSize = { sm: '22px', md: '30px', lg: '46px' }[size]
+  const subSize   = { sm: '10px', md: '11px', lg: '13px' }[size]
+  const isLight   = theme === 'light'
 
   return (
-    <div className="flex flex-col items-center gap-3">
-      {/* Hexagon mark */}
-      <div
-        className="flex items-center justify-center"
-        style={{
-          width: hexSize,
-          height: hexSize,
-          background: 'linear-gradient(145deg, #1a1a2e 0%, #252550 100%)',
-          clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
-        }}
-      >
-        <span style={{
-          color: '#ffffff',
-          fontWeight: 800,
-          fontSize: hexSize * 0.4,
-          letterSpacing: '-0.03em',
-          fontFamily: "'Playfair Display', Georgia, serif",
-          fontStyle: 'italic',
-          lineHeight: 1,
-          userSelect: 'none',
-        }}>
-          K
-        </span>
+    <div className="flex flex-col items-center gap-4">
+      {/* Hexagon mark com ponto coral */}
+      <div className="relative" style={{ width: hexSize, height: hexSize }}>
+        <div
+          className="w-full h-full flex items-center justify-center"
+          style={{
+            background: isLight
+              ? 'linear-gradient(145deg, #ffffff 0%, #d0d5f0 100%)'
+              : 'linear-gradient(145deg, #1a1a2e 0%, #252550 100%)',
+            clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
+          }}
+        >
+          <span style={{
+            color: isLight ? '#1a1a2e' : '#ffffff',
+            fontWeight: 800,
+            fontSize: hexSize * 0.4,
+            letterSpacing: '-0.03em',
+            fontFamily: "'Playfair Display', Georgia, serif",
+            fontStyle: 'italic',
+            lineHeight: 1,
+            userSelect: 'none',
+          }}>
+            K
+          </span>
+        </div>
+        {/* Ponto coral */}
+        <div
+          className="absolute rounded-full"
+          style={{
+            width: hexSize * 0.2,
+            height: hexSize * 0.2,
+            background: '#e94560',
+            top: hexSize * 0.12,
+            right: hexSize * 0.14,
+            boxShadow: `0 0 ${hexSize * 0.1}px rgba(233,69,96,0.6)`,
+          }}
+        />
       </div>
 
       {/* Wordmark text */}
@@ -48,12 +69,15 @@ function Wordmark({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
             fontFamily: "'Playfair Display', Georgia, serif",
             fontWeight: 700,
             fontSize: titleSize,
-            color: '#1a1a2e',
+            color: isLight ? '#ffffff' : '#1a1a2e',
           }}
         >
           Kairo<span style={{ color: '#e94560', fontStyle: 'italic' }}>Hub</span>
         </p>
-        <p style={{ fontSize: subSize }} className="text-[#a0a0a0] uppercase tracking-[0.22em] mt-1.5 font-light">
+        <p
+          style={{ fontSize: subSize, color: isLight ? 'rgba(255,255,255,0.45)' : '#a0a0a0' }}
+          className="uppercase tracking-[0.26em] mt-2 font-light"
+        >
           Agency Platform
         </p>
       </div>
@@ -103,17 +127,13 @@ export function Login() {
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full opacity-10"
           style={{ background: 'radial-gradient(circle, #e94560 0%, transparent 70%)' }} />
 
-        {/* Company logo */}
+        {/* Logo */}
         <div className="relative z-10 flex items-center justify-center w-full">
           <img
             src="/logo.png"
             alt="Kairo Hub"
-            className="w-full max-w-[320px] object-contain select-none"
+            className="w-full max-w-[300px] object-contain select-none drop-shadow-2xl"
             draggable={false}
-            onError={e => {
-              const img = e.currentTarget
-              if (!img.src.endsWith('/logo.svg')) img.src = '/logo.svg'
-            }}
           />
         </div>
       </div>
