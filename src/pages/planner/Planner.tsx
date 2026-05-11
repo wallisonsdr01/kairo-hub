@@ -207,83 +207,91 @@ function ContentPickerDialog({
   )
 }
 
-// ─── Hover Tooltip (inalterado) ───────────────────────────────────────────────
+// ─── Hover Tooltip ────────────────────────────────────────────────────────────
 
 interface HoverState { items: PlannerItem[]; top: number; left: number }
 
-function DayTooltip({ state }: { state: HoverState }) {
+function DayTooltip({
+  state,
+  onMouseEnter,
+  onMouseLeave,
+  onOpenItem,
+}: {
+  state: HoverState
+  onMouseEnter: () => void
+  onMouseLeave: () => void
+  onOpenItem: (item: PlannerItem) => void
+}) {
   return (
-    <div className="fixed z-50 pointer-events-none" style={{ top: state.top, left: state.left }}>
+    <div
+      className="fixed z-50 pointer-events-auto"
+      style={{ top: state.top, left: state.left }}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.97, y: 4 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.97, y: 4 }}
         transition={{ duration: 0.13 }}
-        className="bg-[#13131f] border border-white/10 rounded-xl shadow-2xl w-[260px] p-3 text-xs text-white"
+        className="bg-[#13131f] border border-white/10 rounded-xl shadow-2xl w-[270px] text-xs text-white overflow-hidden"
       >
-        {state.items.map((item, i) => (
-          <div key={item.id} className={i > 0 ? 'mt-2.5 pt-2.5 border-t border-white/8' : ''}>
-            <div className="flex items-start gap-2 mb-1">
-              <div className={`w-1.5 h-1.5 rounded-full mt-[3px] flex-shrink-0 ${statusColors[item.status as PlannerStatus]}`} />
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-white text-[11px] leading-snug">{item.title}</p>
-                <p className="text-[10px] text-gray-300 mt-0.5">
-                  {contentTypeLabels[item.content_type as ContentType]} · {statusLabels[item.status as PlannerStatus]}
-                </p>
-              </div>
-            </div>
-            {item.client && (
-              <div className="flex items-center gap-1 mb-1">
-                <Building2 className="w-3 h-3 text-gray-400 flex-shrink-0" />
-                <span className="text-[10px] text-gray-300 truncate">{item.client.company_name}</span>
-              </div>
-            )}
-            {/* Approval badge no tooltip */}
-            {(() => {
-              const as_ = (item.approval_status || 'pendente_aprovacao') as ApprovalStatus
-              return (
-                <div className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md mb-1.5 ${
-                  as_ === 'aprovado' ? 'bg-green-500/15 text-green-400' :
-                  as_ === 'ajuste_solicitado' ? 'bg-orange-500/15 text-orange-400' :
-                  as_ === 'ajuste_realizado' ? 'bg-blue-500/15 text-blue-400' :
-                  as_ === 'reprovado' ? 'bg-red-500/15 text-red-400' :
-                  'bg-yellow-500/10 text-yellow-400'
-                }`}>
-                  <div className={`w-1 h-1 rounded-full flex-shrink-0 ${approvalDot[as_]}`} />
-                  <span className="text-[9px] font-medium">{approvalLabel[as_]}</span>
+        {/* Header */}
+        <div className="px-3 pt-2.5 pb-1.5 border-b border-white/[0.07]">
+          <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
+            {state.items.length} {state.items.length === 1 ? 'conteúdo' : 'conteúdos'}
+          </p>
+        </div>
+
+        {/* Scrollable items */}
+        <div className="overflow-y-auto max-h-[340px] p-2 space-y-1.5">
+          {state.items.map(item => {
+            const as_ = (item.approval_status || 'pendente_aprovacao') as ApprovalStatus
+            const accent = getApprovalAccent(item)
+            const thumb = item.attachments?.find(a => a.file_type.startsWith('image/'))
+            return (
+              <button
+                key={item.id}
+                onClick={() => onOpenItem(item)}
+                className="w-full text-left rounded-lg border border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] transition-colors overflow-hidden"
+                style={{ borderLeftColor: accent, borderLeftWidth: 3 }}
+              >
+                {thumb && (
+                  <img src={thumb.file_url} alt="" className="w-full h-20 object-cover" draggable={false} />
+                )}
+                <div className="px-2.5 py-2">
+                  <p className="font-semibold text-white text-[11px] leading-snug mb-1">{item.title}</p>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {item.client && (
+                      <div className="flex items-center gap-1">
+                        <Building2 className="w-2.5 h-2.5 text-gray-500 flex-shrink-0" />
+                        <span className="text-[9px] text-gray-400 truncate max-w-[80px]">{item.client.company_name}</span>
+                      </div>
+                    )}
+                    <span
+                      className="text-[9px] px-1.5 py-0.5 rounded font-medium"
+                      style={{ backgroundColor: `${accent}20`, color: accent }}
+                    >
+                      {contentTypeLabels[item.content_type as ContentType]}
+                    </span>
+                    <span className={`ml-auto text-[9px] font-medium px-1.5 py-0.5 rounded ${
+                      as_ === 'aprovado' ? 'bg-green-500/15 text-green-400' :
+                      as_ === 'ajuste_solicitado' ? 'bg-orange-500/15 text-orange-400' :
+                      as_ === 'ajuste_realizado' ? 'bg-blue-500/15 text-blue-400' :
+                      as_ === 'reprovado' ? 'bg-red-500/15 text-red-400' :
+                      'bg-yellow-500/10 text-yellow-400'
+                    }`}>
+                      {approvalLabel[as_]}
+                    </span>
+                  </div>
+                  {item.notes && (
+                    <p className="text-[9px] text-gray-400 line-clamp-1 mt-1">{item.notes}</p>
+                  )}
                 </div>
-              )
-            })()}
-            {item.notes && (
-              <p className="text-[10px] text-gray-300 line-clamp-2 mb-1.5 leading-relaxed">{item.notes}</p>
-            )}
-            {item.client_feedback && (
-              <p className="text-[10px] text-gray-300 italic line-clamp-1 mb-1.5">"{item.client_feedback}"</p>
-            )}
-            {(() => {
-              const img = item.attachments?.find(a => a.file_type.startsWith('image/'))
-              return img ? <img src={img.file_url} alt="" className="w-full h-20 object-cover rounded-lg mb-1.5" /> : null
-            })()}
-            <div className="flex items-center gap-3 flex-wrap">
-              {item.attachments && item.attachments.length > 0 && (
-                <div className="flex items-center gap-1">
-                  <Paperclip className="w-3 h-3 text-gray-400" />
-                  <span className="text-[10px] text-gray-300">
-                    {item.attachments.length} {item.attachments.length === 1 ? 'anexo' : 'anexos'}
-                  </span>
-                </div>
-              )}
-              {item.links && item.links.length > 0 && (
-                <div className="flex items-center gap-1 min-w-0">
-                  <Link2 className="w-3 h-3 text-blue-400 flex-shrink-0" />
-                  <span className="text-[10px] text-blue-400 truncate">
-                    {item.links.length === 1 ? item.links[0].url : `${item.links.length} links`}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
+              </button>
+            )
+          })}
+        </div>
       </motion.div>
     </div>
   )
@@ -629,32 +637,33 @@ function CalendarCard({ item, disabled, onOpen }: { item: PlannerItem; disabled:
       {...attributes}
       style={{ touchAction: 'none', opacity: isDragging ? 0.2 : 1, borderLeftColor: accent }}
       onClick={e => { e.stopPropagation(); onOpen() }}
-      className={`w-full rounded-[5px] border border-gray-200 border-l-[3px] bg-white shadow-sm overflow-hidden transition-all hover:shadow-md select-none
+      className={`w-full rounded-[4px] border border-gray-200 border-l-[3px] bg-white shadow-sm overflow-hidden transition-all hover:shadow-md select-none
         ${disabled ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'}`}
     >
-      {/* Thumbnail — só visível em telas sm+ */}
+      {/* Thumbnail compacta — apenas sm+ */}
       {thumb && (
         <img
           src={thumb.file_url}
           alt=""
-          className="hidden sm:block w-full h-12 md:h-14 object-cover"
+          className="hidden sm:block w-full object-cover"
+          style={{ height: 44 }}
           draggable={false}
         />
       )}
-      <div className="px-1 sm:px-1.5 py-0.5 sm:py-1">
-        <p className="text-[8px] sm:text-[10px] font-semibold text-gray-800 truncate leading-tight">{item.title}</p>
-        <div className="hidden sm:flex items-center gap-1 mt-0.5">
+      <div className="px-1 sm:px-1.5 py-0.5">
+        <p className="text-[8px] sm:text-[9px] font-semibold text-gray-800 truncate leading-tight">{item.title}</p>
+        {/* Desktop: chip de tipo */}
+        <div className="hidden sm:block mt-0.5">
           <span
-            className="text-[8px] px-1 py-0.5 rounded font-medium"
+            className="text-[7px] px-1 py-0.5 rounded font-semibold"
             style={{ backgroundColor: `${accent}18`, color: accent }}
           >
             {contentTypeLabels[item.content_type as ContentType]}
           </span>
         </div>
-        {/* Mobile: só mostra dois pontinhos de status */}
-        <div className="flex sm:hidden items-center gap-1 mt-0.5">
+        {/* Mobile: ponto colorido */}
+        <div className="flex sm:hidden items-center gap-0.5 mt-0.5">
           <div className="w-1 h-1 rounded-full flex-shrink-0" style={{ backgroundColor: accent }} />
-          <span className="text-[8px] text-gray-500 truncate">{item.title}</span>
         </div>
       </div>
     </div>
@@ -686,7 +695,7 @@ function DroppableDay({
       onMouseEnter={e => isCurrentMonth && !dragging && onMouseEnter(e)}
       onMouseLeave={() => !dragging && onMouseLeave()}
       className={`
-        min-h-[52px] sm:min-h-[130px] p-0.5 sm:p-1.5 rounded sm:rounded-lg border transition-all
+        h-[44px] sm:h-[150px] p-0.5 sm:p-1.5 rounded sm:rounded-lg border transition-all overflow-hidden
         ${isCurrentMonth
           ? `cursor-pointer ${isOver
               ? 'border-blue-400/60 bg-blue-500/10 scale-[1.02]'
@@ -755,6 +764,17 @@ export function Planner() {
 
   // Hover tooltip
   const [hover, setHover] = useState<HoverState | null>(null)
+  const hideTooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const startHideTimer = () => {
+    hideTooltipTimerRef.current = setTimeout(() => setHover(null), 180)
+  }
+  const cancelHideTimer = () => {
+    if (hideTooltipTimerRef.current) {
+      clearTimeout(hideTooltipTimerRef.current)
+      hideTooltipTimerRef.current = null
+    }
+  }
 
   // Drag and drop
   const [draggingItem, setDraggingItem] = useState<PlannerItem | null>(null)
@@ -1192,17 +1212,20 @@ export function Planner() {
                     hasItems={hasItems}
                     dragging={!!draggingItem}
                     onDayClick={() => handleDayClick(day, dayItems)}
-                    onMouseEnter={e => handleDayMouseEnter(e, dayItems)}
-                    onMouseLeave={() => setHover(null)}
+                    onMouseEnter={e => { cancelHideTimer(); handleDayMouseEnter(e, dayItems) }}
+                    onMouseLeave={() => { if (!draggingItem) startHideTimer() }}
                   >
+                    {/* Número do dia */}
                     <div className={`
-                      text-[10px] sm:text-xs font-semibold mb-0.5 sm:mb-1 w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center rounded-full
+                      text-[10px] sm:text-xs font-semibold mb-0.5 sm:mb-1 w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center rounded-full flex-shrink-0
                       ${isCurrentDay ? 'bg-blue-600 text-white' : isCurrentMonth ? 'text-[#0f0f0f]' : 'text-gray-400'}
                     `}>
                       {format(day, 'd')}
                     </div>
-                    <div className="space-y-1">
-                      {dayItems.slice(0, 3).map(item => (
+
+                    {/* Mini cards — máx 2, altura fixa, sem crescer */}
+                    <div className="space-y-0.5 sm:space-y-1 overflow-hidden">
+                      {dayItems.slice(0, 2).map(item => (
                         <CalendarCard
                           key={item.id}
                           item={item}
@@ -1210,9 +1233,9 @@ export function Planner() {
                           onOpen={() => openItemView(item)}
                         />
                       ))}
-                      {dayItems.length > 3 && (
-                        <p className="text-[8px] sm:text-[10px] text-gray-500 font-medium pl-0.5">
-                          +{dayItems.length - 3} mais
+                      {dayItems.length > 2 && (
+                        <p className="hidden sm:block text-[8px] text-gray-400 font-medium pl-0.5 leading-tight">
+                          +{dayItems.length - 2} mais
                         </p>
                       )}
                     </div>
@@ -1255,7 +1278,14 @@ export function Planner() {
 
       {/* Hover Tooltip */}
       <AnimatePresence>
-        {hover && <DayTooltip state={hover} />}
+        {hover && (
+          <DayTooltip
+            state={hover}
+            onMouseEnter={cancelHideTimer}
+            onMouseLeave={startHideTimer}
+            onOpenItem={item => { setHover(null); openItemView(item) }}
+          />
+        )}
       </AnimatePresence>
 
       {/* ── Modal: Detalhes do Dia ── */}
