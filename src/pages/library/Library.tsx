@@ -971,7 +971,7 @@ function SnippetsTab() {
           onClick={() => setActiveCategory('all')}
           className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all flex items-center gap-1.5 border ${
             activeCategory === 'all'
-              ? 'bg-[#0f0f0f] text-white border-[#0f0f0f]'
+              ? 'bg-[#1a1a2e] text-white border-[#1a1a2e]'
               : 'bg-white text-[#737373] border-[#e0e0e0] hover:bg-[#f5f5f5] hover:text-[#0f0f0f]'
           }`}
         >
@@ -983,7 +983,7 @@ function SnippetsTab() {
             onClick={() => setActiveCategory(cat.value)}
             className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all flex items-center gap-1.5 border ${
               activeCategory === cat.value
-                ? 'bg-[#0f0f0f] text-white border-[#0f0f0f]'
+                ? 'bg-[#1a1a2e] text-white border-[#1a1a2e]'
                 : 'bg-white text-[#737373] border-[#e0e0e0] hover:bg-[#f5f5f5] hover:text-[#0f0f0f]'
             }`}
           >

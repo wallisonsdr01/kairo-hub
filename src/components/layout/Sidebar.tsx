@@ -20,14 +20,39 @@ const navItems = [
   { href: '/financial', icon: Wallet,           label: 'Financeiro'      },
 ]
 
-// ── StatusBrand logo mark ─────────────────────────────────────────────────────
+// ── Kairo Hub logo mark ───────────────────────────────────────────────────────
+
+function HexMark({ size = 28 }: { size?: number }) {
+  return (
+    <div
+      className="flex-shrink-0 flex items-center justify-center"
+      style={{
+        width: size,
+        height: size,
+        background: 'linear-gradient(145deg, #1a1a2e 0%, #252550 100%)',
+        clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
+      }}
+    >
+      <span style={{
+        color: '#ffffff',
+        fontWeight: 800,
+        fontSize: size * 0.38,
+        letterSpacing: '-0.03em',
+        fontFamily: "'Playfair Display', Georgia, serif",
+        fontStyle: 'italic',
+        lineHeight: 1,
+        userSelect: 'none',
+      }}>
+        K
+      </span>
+    </div>
+  )
+}
 
 function BrandMark({ collapsed }: { collapsed: boolean }) {
   return (
     <div className="flex items-center gap-2.5 flex-1 min-w-0">
-      <div className="flex-shrink-0 w-7 h-7 rounded-md bg-[#0f0f0f] flex items-center justify-center">
-        <span className="text-white font-bold text-[11px] tracking-tight select-none">SB</span>
-      </div>
+      <HexMark size={28} />
 
       {!collapsed && (
         <motion.div
@@ -36,10 +61,14 @@ function BrandMark({ collapsed }: { collapsed: boolean }) {
           className="leading-none min-w-0"
         >
           <span
-            className="block text-[13px] font-semibold text-[#0f0f0f] tracking-tight whitespace-nowrap"
-            style={{ fontFamily: "'Georgia', serif" }}
+            className="block text-[14px] tracking-tight whitespace-nowrap"
+            style={{
+              fontFamily: "'Playfair Display', Georgia, serif",
+              fontWeight: 700,
+              color: '#1a1a2e',
+            }}
           >
-            Status<span style={{ fontFamily: 'inherit', fontWeight: 700 }}>Brand</span>
+            Kairo<span style={{ color: '#e94560', fontStyle: 'italic' }}>Hub</span>
           </span>
         </motion.div>
       )}
@@ -89,8 +118,8 @@ export function Sidebar({ onMobileClose }: SidebarProps) {
                 className={cn(
                   'flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-[13px] transition-all duration-150 group',
                   active
-                    ? 'bg-[#0f0f0f] font-medium'
-                    : 'text-[#737373] hover:bg-[#f5f5f5] hover:text-[#0f0f0f]'
+                    ? 'bg-[#1a1a2e] font-medium'
+                    : 'text-[#737373] hover:bg-[#f5f5f5] hover:text-[#1a1a2e]'
                 )}
               >
                 <item.icon

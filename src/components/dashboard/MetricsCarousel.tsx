@@ -12,7 +12,7 @@ import type { ContentType } from '@/types'
 // ─── Label / colour maps ──────────────────────────────────────────────────────
 
 const typePalette = [
-  '#0f0f0f', '#3b82f6', '#8b5cf6', '#f59e0b',
+  '#1a1a2e', '#3b82f6', '#8b5cf6', '#f59e0b',
   '#10b981', '#ef4444', '#ec4899', '#14b8a6',
 ]
 
@@ -113,7 +113,7 @@ function GeneratedChart({
             width={24}
           />
           <Tooltip {...tooltipStyle} cursor={{ fill: 'rgba(0,0,0,0.03)' }} />
-          <Bar dataKey="conteudos" fill="#0f0f0f" radius={[4, 4, 0, 0]} name="Gerados" />
+          <Bar dataKey="conteudos" fill="#1a1a2e" radius={[4, 4, 0, 0]} name="Gerados" />
         </BarChart>
       </ResponsiveContainer>
       {summary && (
@@ -282,7 +282,7 @@ export function MetricsCarousel({
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}
-            className="flex-shrink-0 w-7 h-7 rounded-lg border border-[#e8e8e8] bg-white flex items-center justify-center text-[#a0a0a0] hover:border-[#0f0f0f] hover:bg-[#0f0f0f] hover:text-white transition-all"
+            className="flex-shrink-0 w-7 h-7 rounded-lg border border-[#e8e8e8] bg-white flex items-center justify-center text-[#a0a0a0] hover:border-[#1a1a2e] hover:bg-[#1a1a2e] hover:text-white transition-all"
             aria-label="Anterior"
           >
             <ChevronLeft className="w-3.5 h-3.5" />
@@ -309,7 +309,7 @@ export function MetricsCarousel({
 
           <button
             onClick={() => navigate(1)}
-            className="flex-shrink-0 w-7 h-7 rounded-lg border border-[#e8e8e8] bg-white flex items-center justify-center text-[#a0a0a0] hover:border-[#0f0f0f] hover:bg-[#0f0f0f] hover:text-white transition-all"
+            className="flex-shrink-0 w-7 h-7 rounded-lg border border-[#e8e8e8] bg-white flex items-center justify-center text-[#a0a0a0] hover:border-[#1a1a2e] hover:bg-[#1a1a2e] hover:text-white transition-all"
             aria-label="Próximo"
           >
             <ChevronRight className="w-3.5 h-3.5" />
@@ -323,7 +323,7 @@ export function MetricsCarousel({
               onClick={() => goTo(i)}
               className={`rounded-full transition-all duration-200 ${
                 i === activeIdx
-                  ? 'w-4 h-1.5 bg-[#0f0f0f]'
+                  ? 'w-4 h-1.5 bg-[#1a1a2e]'
                   : 'w-1.5 h-1.5 bg-[#e0e0e0] hover:bg-[#b8b8b8]'
               }`}
               aria-label={`Ir para slide ${i + 1}`}

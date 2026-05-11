@@ -28,7 +28,7 @@ export function ForgotPassword() {
       <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
         <div className="rounded-2xl border border-white/10 bg-[#0d0f14]/90 backdrop-blur-xl p-8 shadow-2xl">
           <div className="flex flex-col items-center mb-8">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mb-4">
+            <div className="w-12 h-12 flex items-center justify-center mb-4" style={{ background: 'linear-gradient(145deg, #1a1a2e 0%, #252550 100%)', borderRadius: '16px', boxShadow: '0 8px 24px rgba(26,26,46,0.5)' }}>
               <Zap className="w-6 h-6 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-white">Recuperar senha</h1>
@@ -42,7 +42,7 @@ export function ForgotPassword() {
               <Input
                 label="Email"
                 type="email"
-                placeholder="voce@statusbrand.com"
+                placeholder="voce@kairohub.com"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 icon={<Mail className="w-4 h-4" />}

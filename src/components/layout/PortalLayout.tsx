@@ -27,20 +27,37 @@ export function PortalLayout({
   const initial   = (rawName || profile?.email || 'C')[0].toUpperCase()
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f] flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{ background: '#0e0e20' }}>
       {/* Top bar */}
-      <header className="h-14 border-b border-white/10 bg-[#0f0f0f] flex items-center px-6 flex-shrink-0 sticky top-0 z-30">
-
+      <header
+        className="h-14 border-b border-white/10 flex items-center px-6 flex-shrink-0 sticky top-0 z-30"
+        style={{ background: 'linear-gradient(90deg, #1a1a2e 0%, #12122a 100%)' }}
+      >
         {/* Brand */}
         <div className="flex items-center gap-2.5 flex-1">
-          <div className="w-7 h-7 rounded-md bg-white/15 flex items-center justify-center flex-shrink-0">
-            <span className="font-bold text-[11px] tracking-tight select-none" style={{ color: '#ffffff' }}>SB</span>
+          {/* Hexagon mark */}
+          <div
+            className="flex-shrink-0 flex items-center justify-center"
+            style={{
+              width: 28, height: 28,
+              background: 'linear-gradient(145deg, #e94560 0%, #c23050 100%)',
+              clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
+            }}
+          >
+            <span style={{
+              color: '#ffffff', fontWeight: 800, fontSize: 11,
+              fontFamily: "'Playfair Display', Georgia, serif",
+              fontStyle: 'italic', lineHeight: 1, userSelect: 'none',
+            }}>K</span>
           </div>
           <span
-            className="text-white font-semibold text-[13px] tracking-tight"
-            style={{ fontFamily: "'Georgia', serif" }}
+            className="font-semibold text-[14px] tracking-tight"
+            style={{
+              fontFamily: "'Playfair Display', Georgia, serif",
+              color: '#ffffff',
+            }}
           >
-            StatusBrand
+            Kairo<span style={{ color: '#e94560', fontStyle: 'italic' }}>Hub</span>
           </span>
           {clientName && (
             <>

@@ -1,4 +1,4 @@
-# AgênciaForge
+# Kairo Hub
 
 Sistema completo de gestão para agências de marketing digital, com geração de conteúdo por IA.
 
@@ -27,7 +27,7 @@ Sistema completo de gestão para agências de marketing digital, com geração d
 ### 1. Instalar dependências
 
 ```bash
-cd agencia-forge
+cd kairo-hub
 npm install
 ```
 

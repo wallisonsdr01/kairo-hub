@@ -86,7 +86,7 @@ function NoteCard({ note, onOpen }: { note: Note; onOpen: () => void }) {
         <div className="flex items-center gap-1.5 mb-2">
           <div className="h-1 flex-1 rounded-full bg-[#f0f0f0] overflow-hidden">
             <div
-              className="h-full bg-[#0f0f0f] rounded-full transition-all"
+              className="h-full bg-[#1a1a2e] rounded-full transition-all"
               style={{ width: `${(doneCount / note.checklist.length) * 100}%` }}
             />
           </div>
@@ -150,7 +150,7 @@ function ChecklistEditor({
             type="button"
             onClick={() => toggle(item.id)}
             className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center transition-colors ${
-              item.done ? 'bg-[#0f0f0f] border-[#0f0f0f]' : 'border-[#d0d0d0] hover:border-[#a0a0a0]'
+              item.done ? 'bg-[#1a1a2e] border-[#1a1a2e]' : 'border-[#d0d0d0] hover:border-[#a0a0a0]'
             }`}
           >
             {item.done && <Check className="w-2.5 h-2.5" style={{ color: '#ffffff' }} />}
@@ -325,7 +325,7 @@ function NoteModal({
             >
               {t === 'texto' ? 'Texto' : 'Checklist'}
               {t === 'checklist' && checklist.length > 0 && (
-                <span className="ml-1.5 text-[10px] bg-[#0f0f0f] rounded-full px-1.5 py-0.5" style={{ color: '#ffffff' }}>
+                <span className="ml-1.5 text-[10px] bg-[#1a1a2e] rounded-full px-1.5 py-0.5" style={{ color: '#ffffff' }}>
                   {checklist.filter(i => i.done).length}/{checklist.length}
                 </span>
               )}
@@ -393,7 +393,7 @@ function NoteModal({
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-1.5 text-[13px] font-medium px-4 py-2 rounded-xl bg-[#0f0f0f] hover:bg-[#1a1a1a] transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 text-[13px] font-medium px-4 py-2 rounded-xl bg-[#1a1a2e] hover:bg-[#252550] transition-colors disabled:opacity-50"
             style={{ color: '#ffffff' }}
           >
             {saving ? 'Salvando...' : 'Salvar'}
@@ -493,7 +493,7 @@ export function Notes() {
           <FilterBar filter={filter} clients={clients} onChange={setFilter} />
           <button
             onClick={() => setSelected('new')}
-            className="flex items-center gap-2 text-[13px] font-medium px-4 py-2.5 rounded-xl bg-[#0f0f0f] hover:bg-[#1a1a1a] transition-colors"
+            className="flex items-center gap-2 text-[13px] font-medium px-4 py-2.5 rounded-xl bg-[#1a1a2e] hover:bg-[#252550] transition-colors"
             style={{ color: '#ffffff' }}
           >
             <Plus className="w-4 h-4" style={{ color: '#ffffff' }} />
@@ -530,7 +530,7 @@ export function Notes() {
             {!(filter.client_id || filter.type || filter.origin) && (
               <button
                 onClick={() => setSelected('new')}
-                className="flex items-center gap-2 text-[13px] font-medium px-4 py-2.5 rounded-xl bg-[#0f0f0f] hover:bg-[#1a1a1a] transition-colors mt-2"
+                className="flex items-center gap-2 text-[13px] font-medium px-4 py-2.5 rounded-xl bg-[#1a1a2e] hover:bg-[#252550] transition-colors mt-2"
                 style={{ color: '#ffffff' }}
               >
                 <Plus className="w-4 h-4" style={{ color: '#ffffff' }} />

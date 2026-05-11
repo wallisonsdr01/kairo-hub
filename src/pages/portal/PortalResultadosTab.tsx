@@ -263,7 +263,7 @@ export function PortalResultadosTab() {
             onClick={() => setSelectedId(r.id)}
             className={`flex-shrink-0 px-3.5 py-2 rounded-xl text-[12px] font-medium transition-all ${
               r.id === (selected?.id)
-                ? 'bg-[#0f0f0f] text-white border border-[#0f0f0f]'
+                ? 'bg-[#1a1a2e] text-white border border-[#1a1a2e]'
                 : 'text-[#737373] hover:text-[#0f0f0f] hover:bg-[#f0f0f0] border border-transparent'
             }`}
           >

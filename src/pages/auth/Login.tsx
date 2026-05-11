@@ -7,27 +7,53 @@ import { Input } from '@/components/ui/input'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/components/ui/toast'
 
-// ── StatusBrand wordmark ───────────────────────────────────────────────────────
+// ── Kairo Hub wordmark ─────────────────────────────────────────────────────────
 
 function Wordmark({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
-  const sizes = {
-    sm:  { mark: 'text-[10px] w-6 h-6 rounded', status: 'text-[18px]', brand: 'text-[10px]' },
-    md:  { mark: 'text-[12px] w-8 h-8 rounded-md', status: 'text-[26px]', brand: 'text-[12px]' },
-    lg:  { mark: 'text-[14px] w-10 h-10 rounded-lg', status: 'text-[32px]', brand: 'text-[14px]' },
-  }
-  const s = sizes[size]
+  const hexSize = { sm: 36, md: 48, lg: 60 }[size]
+  const titleSize = { sm: '22px', md: '30px', lg: '38px' }[size]
+  const subSize   = { sm: '10px', md: '11px', lg: '12px' }[size]
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <div className={`bg-[#0f0f0f] flex items-center justify-center flex-shrink-0 ${s.mark}`}>
-        <span className="text-white font-bold select-none">SB</span>
+      {/* Hexagon mark */}
+      <div
+        className="flex items-center justify-center"
+        style={{
+          width: hexSize,
+          height: hexSize,
+          background: 'linear-gradient(145deg, #1a1a2e 0%, #252550 100%)',
+          clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
+        }}
+      >
+        <span style={{
+          color: '#ffffff',
+          fontWeight: 800,
+          fontSize: hexSize * 0.4,
+          letterSpacing: '-0.03em',
+          fontFamily: "'Playfair Display', Georgia, serif",
+          fontStyle: 'italic',
+          lineHeight: 1,
+          userSelect: 'none',
+        }}>
+          K
+        </span>
       </div>
+
+      {/* Wordmark text */}
       <div className="text-center">
-        <p className={`font-bold text-[#0f0f0f] leading-none ${s.status}`}
-          style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}>
-          Status<span style={{ fontFamily: 'inherit' }}>Brand</span>
+        <p
+          className="leading-none"
+          style={{
+            fontFamily: "'Playfair Display', Georgia, serif",
+            fontWeight: 700,
+            fontSize: titleSize,
+            color: '#1a1a2e',
+          }}
+        >
+          Kairo<span style={{ color: '#e94560', fontStyle: 'italic' }}>Hub</span>
         </p>
-        <p className={`text-[#a0a0a0] uppercase tracking-[0.22em] mt-1 font-light ${s.brand}`}>
+        <p style={{ fontSize: subSize }} className="text-[#a0a0a0] uppercase tracking-[0.22em] mt-1.5 font-light">
           Agency Platform
         </p>
       </div>
@@ -67,16 +93,21 @@ export function Login() {
     <div className="min-h-screen flex">
 
       {/* Left panel — brand identity */}
-      <div className="hidden lg:flex lg:w-[45%] bg-[#0f0f0f] flex-col items-center justify-center p-12 relative overflow-hidden">
-        {/* Subtle texture */}
-        <div className="absolute inset-0 opacity-[0.03]"
+      <div className="hidden lg:flex lg:w-[45%] flex-col items-center justify-center p-12 relative overflow-hidden"
+        style={{ background: 'linear-gradient(160deg, #1a1a2e 0%, #12122a 60%, #0e0e20 100%)' }}
+      >
+        {/* Subtle grid texture */}
+        <div className="absolute inset-0 opacity-[0.04]"
           style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, #fff 1px, transparent 0)', backgroundSize: '28px 28px' }} />
+        {/* Coral accent glow */}
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full opacity-10"
+          style={{ background: 'radial-gradient(circle, #e94560 0%, transparent 70%)' }} />
 
         {/* Company logo */}
         <div className="relative z-10 flex items-center justify-center w-full">
           <img
             src="/logo.png"
-            alt="StatusBrand"
+            alt="Kairo Hub"
             className="w-full max-w-[320px] object-contain select-none"
             draggable={false}
             onError={e => {
@@ -111,7 +142,7 @@ export function Login() {
               <Input
                 label="Email"
                 type="email"
-                placeholder="voce@statusbrand.com"
+                placeholder="voce@kairohub.com"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 icon={<Mail className="w-4 h-4" />}
@@ -149,7 +180,10 @@ export function Login() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full h-10 rounded-xl bg-[#0f0f0f] text-white text-[13px] font-medium flex items-center justify-center gap-2 hover:bg-[#2a2a2a] transition-colors disabled:opacity-60 disabled:cursor-not-allowed sb-invert"
+                className="w-full h-10 rounded-xl text-white text-[13px] font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-60 disabled:cursor-not-allowed sb-invert"
+                style={{ background: '#1a1a2e' }}
+                onMouseEnter={e => (e.currentTarget.style.background = '#252550')}
+                onMouseLeave={e => (e.currentTarget.style.background = '#1a1a2e')}
               >
                 {loading ? 'Entrando...' : <><span>Entrar</span><ArrowRight className="w-4 h-4" /></>}
               </button>
@@ -165,7 +199,7 @@ export function Login() {
 
           {/* Footer note */}
           <p className="text-center text-[11px] text-[#c0c0c0] mt-5">
-            © {new Date().getFullYear()} StatusBrand. Todos os direitos reservados.
+            © {new Date().getFullYear()} Kairo Hub. Todos os direitos reservados.
           </p>
         </motion.div>
       </div>

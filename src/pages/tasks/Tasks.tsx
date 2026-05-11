@@ -252,7 +252,7 @@ function DayColumn({
       {/* Column header */}
       <div className={`
         rounded-xl border px-3 py-2.5 mb-2 transition-all
-        ${today ? 'bg-[#0f0f0f] border-[#0f0f0f]' : 'bg-white border-[#e8e8e8]'}
+        ${today ? 'bg-[#1a1a2e] border-[#1a1a2e]' : 'bg-white border-[#e8e8e8]'}
       `}>
         <div className="flex items-center justify-between">
           <div>

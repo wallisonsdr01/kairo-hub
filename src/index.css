@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── StatusBrand Design System ─────────────────────────────────────────────── */
+/* ── Kairo Hub Design System ────────────────────────────────────────────────── */
 
 @layer base {
   :root {
@@ -14,9 +14,10 @@
     --popover:             0 0% 100%;
     --popover-foreground:  0 0% 6%;
 
-    /* Brand */
-    --primary:             0 0% 7%;        /* #111111 – brand black */
-    --primary-foreground:  0 0% 100%;      /* white text on dark button */
+    /* Brand — Kairo Hub palette */
+    --primary:             240 28% 14%;    /* #1a1a2e – brand navy  */
+    --primary-foreground:  0 0% 100%;      /* white text on navy button */
+    --kh-accent:           350 79% 59%;    /* #e94560 – coral red   */
     --secondary:           0 0% 95%;       /* #f2f2f2 */
     --secondary-foreground:0 0% 20%;
     --muted:               0 0% 95%;
@@ -29,7 +30,7 @@
     --destructive-foreground: 0 0% 98%;
     --border:              0 0% 89%;       /* #e3e3e3 */
     --input:               0 0% 93%;       /* #ededed */
-    --ring:                0 0% 7%;
+    --ring:                240 28% 14%;    /* navy ring */
 
     --radius: 0.5rem;
   }
@@ -138,6 +139,15 @@
 
   /* Self: when bg-[#0f0f0f] is the item itself (nav active state) */
   .bg-\[\#0f0f0f\].text-white { color: #ffffff !important; }
+
+  /* Kairo Hub navy areas (#1a1a2e) — preserve white text and icons */
+  .bg-\[\#1a1a2e\] .text-white,
+  .bg-\[\#1a1a2e\].text-white { color: #ffffff !important; }
+  .bg-\[\#1a1a2e\] .text-white\/50,
+  .bg-\[\#1a1a2e\] .text-white\/70 { opacity: 1; }
+
+  /* Active nav item with navy bg */
+  .kh-nav-active.text-white { color: #ffffff !important; }
 
   /* Gradient text clips that were white-on-dark → now dark-on-light */
   .bg-clip-text.text-transparent { color: transparent !important; }

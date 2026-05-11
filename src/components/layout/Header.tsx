@@ -33,7 +33,7 @@ export function Header({ title, subtitle, action, dark = true }: HeaderProps) {
     <>
       <header className={`h-14 border-b flex items-center px-5 gap-4 sticky top-0 z-20 ${
         dark
-          ? 'bg-[#0f0f0f] border-white/10'
+          ? 'bg-[#1a1a2e] border-white/10'
           : 'bg-white border-gray-100'
       }`}>
         <div className="flex-1 min-w-0">
@@ -75,7 +75,7 @@ export function Header({ title, subtitle, action, dark = true }: HeaderProps) {
               <p className={`text-[11px] font-medium ${dark ? 'text-white' : 'text-[#0f0f0f]'}`}>{firstName}</p>
             </div>
             <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold ${
-              dark ? 'bg-white/15 border border-white/20' : 'bg-[#0f0f0f] border border-[#0f0f0f]'
+              dark ? 'bg-white/15 border border-white/20' : 'bg-[#1a1a2e] border border-[#1a1a2e]'
             }`}>
               <span style={{ color: '#ffffff' }}>{avatarInitial}</span>
             </div>

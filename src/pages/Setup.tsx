@@ -70,10 +70,10 @@ export function Setup() {
       >
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-2xl shadow-blue-500/25 mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 mb-4" style={{ background: 'linear-gradient(145deg, #1a1a2e 0%, #252550 100%)', borderRadius: '20px', boxShadow: '0 20px 40px rgba(26,26,46,0.4)' }}>
             <Zap className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">StatusBrand</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Kairo Hub</h1>
           <p className="text-gray-400">Configure o sistema em 4 passos simples</p>
         </div>
 

@@ -258,7 +258,7 @@ export function SupportTab({ clientId }: { clientId: string }) {
               onChange={e => setForm(p => ({ ...p, contact_value: e.target.value }))}
               placeholder={
                 form.contact_type === 'whatsapp' ? '+55 11 99999-9999' :
-                form.contact_type === 'email'    ? 'contato@statusbrand.com' :
+                form.contact_type === 'email'    ? 'contato@kairohub.com' :
                 form.contact_type === 'telefone' ? '+55 11 3333-3333' :
                 'Valor...'
               }
