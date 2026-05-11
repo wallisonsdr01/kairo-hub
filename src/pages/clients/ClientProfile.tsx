@@ -27,6 +27,8 @@ import { PlannerItemViewModal } from '@/components/PlannerItemViewModal'
 import { ReportsTab } from './tabs/ReportsTab'
 import { useToast } from '@/components/ui/toast'
 import { formatDate, formatRelative, contentTypeLabels } from '@/utils/formatters'
+import { format, parseISO, startOfWeek, endOfWeek } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 import { calcFinancialStatus, financialStatusLabel, getFinancialAuxText } from '@/utils/financial'
 import type { FinancialStatus } from '@/types'
 import { supabase } from '@/integrations/supabase/client'
@@ -368,6 +370,60 @@ function FinancialCard({ client }: { client: import('@/types').Client }) {
       </div>
     </motion.div>
   )
+}
+
+// ─── Planner Week View ────────────────────────────────────────────────────────
+
+type WeekGroup = {
+  key: string
+  label: string
+  dateRange: string
+  items: PlannerItem[]
+}
+
+function groupPlannerByWeek(items: PlannerItem[]): WeekGroup[] {
+  const map = new Map<string, WeekGroup>()
+  items.forEach(item => {
+    const date = parseISO(item.scheduled_date)
+    const weekStart = startOfWeek(date, { weekStartsOn: 1 })
+    const weekEnd = endOfWeek(date, { weekStartsOn: 1 })
+    const key = format(weekStart, 'yyyy-MM-dd')
+    if (!map.has(key)) {
+      map.set(key, {
+        key,
+        label: '',
+        dateRange: `${format(weekStart, 'dd MMM', { locale: ptBR })} - ${format(weekEnd, 'dd MMM', { locale: ptBR })}`,
+        items: [],
+      })
+    }
+    map.get(key)!.items.push(item)
+  })
+  const sorted = Array.from(map.values()).sort((a, b) => a.key.localeCompare(b.key))
+  sorted.forEach((w, i) => { w.label = `Semana ${i + 1}` })
+  return sorted
+}
+
+function getPlannerBadge(item: PlannerItem): { label: string; cls: string } {
+  if (item.status === 'publicado') return { label: 'Publicado', cls: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20' }
+  switch (item.approval_status) {
+    case 'aprovado':         return { label: 'Aprovado',    cls: 'bg-green-500/15 text-green-400 border border-green-500/20' }
+    case 'reprovado':        return { label: 'Reprovado',   cls: 'bg-red-500/15 text-red-400 border border-red-500/20' }
+    case 'ajuste_solicitado':return { label: 'Ajuste',      cls: 'bg-orange-500/15 text-orange-400 border border-orange-500/20' }
+    case 'ajuste_realizado': return { label: 'Em Revisão',  cls: 'bg-yellow-500/15 text-yellow-400 border border-yellow-500/20' }
+    default:                 return { label: 'Em Aprovação',cls: 'bg-zinc-700/60 text-zinc-400 border border-zinc-600/30' }
+  }
+}
+
+function getWeekSummaryBadge(items: PlannerItem[]): { label: string; cls: string } {
+  const hasAjuste    = items.some(i => i.approval_status === 'ajuste_solicitado')
+  const hasReprovado = items.some(i => i.approval_status === 'reprovado')
+  const allPublished = items.length > 0 && items.every(i => i.status === 'publicado')
+  const allApproved  = items.length > 0 && items.every(i => i.approval_status === 'aprovado' || i.status === 'publicado')
+  if (hasReprovado)  return { label: 'Reprovado',    cls: 'bg-red-500/15 text-red-400' }
+  if (hasAjuste)     return { label: 'Ajuste',       cls: 'bg-orange-500/15 text-orange-400' }
+  if (allPublished)  return { label: 'Publicado',    cls: 'bg-emerald-500/15 text-emerald-400' }
+  if (allApproved)   return { label: 'Aprovado',     cls: 'bg-green-500/15 text-green-400' }
+  return               { label: 'Em Aprovação',  cls: 'bg-zinc-700/60 text-zinc-400' }
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -734,58 +790,93 @@ export function ClientProfile() {
 
           {/* Planner */}
           <TabsContent value="planner">
-            <div className="space-y-1.5">
-              {(planner || []).map(p => {
-                const thumb = p.attachments?.find(a => a.file_type.startsWith('image/'))
+            {(() => {
+              const weeks = groupPlannerByWeek(planner || [])
+              if (weeks.length === 0) {
                 return (
-                  <button
-                    key={p.id}
-                    onClick={() => { setSelectedPlannerItem(p); setPlannerItemOpen(true) }}
-                    className="w-full flex items-center gap-3 p-3.5 rounded-xl border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/[0.12] transition-all text-left group cursor-pointer"
-                  >
-                    {thumb ? (
-                      <img
-                        src={thumb.file_url}
-                        alt=""
-                        className="w-10 h-10 rounded-lg object-cover flex-shrink-0 border border-white/[0.08]"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-lg bg-white/[0.04] border border-white/[0.08] flex items-center justify-center flex-shrink-0">
-                        <div className={`w-2 h-2 rounded-full ${
-                          p.status === 'ideia' ? 'bg-purple-500' :
-                          p.status === 'producao' ? 'bg-blue-500' :
-                          p.status === 'revisao' ? 'bg-yellow-500' :
-                          p.status === 'aprovado' ? 'bg-green-500' : 'bg-emerald-500'
-                        }`} />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-medium text-zinc-200 truncate">{p.title}</p>
-                      <p className="text-[11px] text-zinc-500 mt-0.5">
-                        {formatDate(p.scheduled_date)}
-                        <span className="mx-1.5 text-zinc-700">·</span>
-                        {contentTypeLabels[p.content_type]}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2.5 flex-shrink-0">
-                      <Badge status={p.status} />
-                      {p.approval_status && p.approval_status !== 'pendente_aprovacao' && (
-                        <div className={`w-1.5 h-1.5 rounded-full ${
-                          p.approval_status === 'aprovado' ? 'bg-green-400' :
-                          p.approval_status === 'reprovado' ? 'bg-red-400' : 'bg-orange-400'
-                        }`} />
-                      )}
-                      <Eye className="w-3.5 h-3.5 text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                  </button>
+                  <div className="text-center py-14 border border-dashed border-white/[0.06] rounded-xl">
+                    <CalendarDays className="w-7 h-7 text-zinc-700 mx-auto mb-2" />
+                    <p className="text-[12px] text-zinc-600">Nenhum planejamento ainda.</p>
+                  </div>
                 )
-              })}
-              {(!planner || planner.length === 0) && (
-                <div className="text-center py-10 text-[12px] text-zinc-600">
-                  Nenhum planejamento ainda.
+              }
+              return (
+                <div className="overflow-x-auto pb-2 -mx-1 px-1">
+                  <div className="flex gap-3" style={{ minWidth: `${Math.max(weeks.length * 260, 520)}px` }}>
+                    {weeks.map(week => {
+                      const summary = getWeekSummaryBadge(week.items)
+                      return (
+                        <div key={week.key} className="flex-shrink-0 w-[248px]">
+                          {/* Week header */}
+                          <div className="flex items-start justify-between mb-2.5 px-1">
+                            <div>
+                              <p className="text-[13px] font-semibold text-zinc-200">{week.label}</p>
+                              <p className="text-[11px] text-zinc-500 mt-0.5">{week.dateRange}</p>
+                            </div>
+                            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full mt-0.5 ${summary.cls}`}>
+                              {summary.label}
+                            </span>
+                          </div>
+
+                          {/* Cards column */}
+                          <div className="space-y-2">
+                            {week.items.map(item => {
+                              const badge = getPlannerBadge(item)
+                              const thumb = item.attachments?.find(a => a.file_type.startsWith('image/'))
+                              return (
+                                <button
+                                  key={item.id}
+                                  onClick={() => { setSelectedPlannerItem(item); setPlannerItemOpen(true) }}
+                                  className="w-full text-left p-3 rounded-xl border border-white/[0.08] bg-[#13131f] hover:bg-[#1c1c30] hover:border-white/[0.15] transition-all group"
+                                >
+                                  {/* Thumb (se houver) */}
+                                  {thumb && (
+                                    <img
+                                      src={thumb.file_url}
+                                      alt=""
+                                      className="w-full h-28 object-cover rounded-lg mb-2.5 border border-white/[0.06]"
+                                    />
+                                  )}
+
+                                  {/* Date */}
+                                  <p className="text-[10px] text-zinc-500 mb-1 font-medium tracking-wide">
+                                    {format(parseISO(item.scheduled_date), "dd MMM", { locale: ptBR }).replace('.', '')} · 18:00
+                                  </p>
+
+                                  {/* Title */}
+                                  <p className="text-[12px] font-semibold text-zinc-100 leading-snug mb-2.5 line-clamp-2">
+                                    {item.title}
+                                  </p>
+
+                                  {/* Bottom row: platform + type + status */}
+                                  <div className="flex items-center gap-1.5">
+                                    {/* Instagram icon */}
+                                    <div className="w-[18px] h-[18px] rounded-[5px] flex items-center justify-center flex-shrink-0"
+                                      style={{ background: 'linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045)' }}>
+                                      <Instagram className="w-2.5 h-2.5 text-white" />
+                                    </div>
+
+                                    {/* Content type */}
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-white/[0.06] text-zinc-400 font-medium">
+                                      {contentTypeLabels[item.content_type] || item.content_type}
+                                    </span>
+
+                                    {/* Status badge — pushed right */}
+                                    <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-md font-semibold ${badge.cls}`}>
+                                      {badge.label}
+                                    </span>
+                                  </div>
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
-              )}
-            </div>
+              )
+            })()}
 
             {selectedPlannerItem && (
               <PlannerItemViewModal
