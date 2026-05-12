@@ -149,6 +149,12 @@
   /* Active nav item with navy bg */
   .kh-nav-active.text-white { color: #ffffff !important; }
 
+  /* Gray-900 dark backgrounds (Dashboard pills, calendar day, KPI card) */
+  .bg-gray-900 .text-white,
+  .bg-gray-900.text-white { color: #ffffff !important; }
+  .bg-gray-800 .text-white,
+  .bg-gray-800.text-white { color: #ffffff !important; }
+
   /* Gradient text clips that were white-on-dark → now dark-on-light */
   .bg-clip-text.text-transparent { color: transparent !important; }
 
