@@ -43,75 +43,49 @@ function StatPill({ label, value, color }: { label: string; value: number | stri
 // ─── View 1 — Planejamento por approval_status ────────────────────────────────
 
 function PlannerBarChart({ data }: { data: { label: string; value: number; color: string }[] }) {
-  // Só renderiza barras com valor > 0 para evitar espaço vazio
-  const activeData = data.filter(d => d.value > 0)
-  const hasData    = activeData.length > 0
-  const total      = data.reduce((s, d) => s + d.value, 0)
+  // Mostra as 4 categorias sempre — sem filtrar zeros, sem pills extras
+  const hasData = data.some(d => d.value > 0)
 
-  const top = activeData.reduce<{ label: string; value: number; color: string } | null>(
-    (best, d) => (best === null || d.value > best.value ? d : best), null,
-  )
-
-  const pending   = data.find(d => d.label === 'Ag. aprovação')?.value  ?? 0
-  const approved  = data.find(d => d.label === 'Aprovados')?.value     ?? 0
+  const chartData = data.map(d => ({ name: d.label, value: d.value, fill: d.color }))
 
   if (!hasData) {
     return (
-      <div className="flex flex-col h-full">
-        <div className="flex-1 flex items-center justify-center">
-          <p className="text-[12px] text-[#b0b0b0] text-center">
-            Nenhum item no período.<br />
-            <span className="text-[11px]">Tente outro período ou crie posts em Planejamento.</span>
-          </p>
-        </div>
-        {/* Pills mesmo quando vazio para manter altura estável */}
-        <div className="flex gap-2 flex-shrink-0">
-          <StatPill label="Total"     value={0} />
-          <StatPill label="Pendentes" value={0} color="#f59e0b" />
-          <StatPill label="Aprovados" value={0} color="#10b981" />
-        </div>
+      <div className="flex-1 flex items-center justify-center h-full">
+        <p className="text-[12px] text-[#b0b0b0] text-center">
+          Nenhum item no período.<br />
+          <span className="text-[11px]">Tente outro período ou crie posts em Planejamento.</span>
+        </p>
       </div>
     )
   }
 
-  const chartData = activeData.map(d => ({ name: d.label, value: d.value, fill: d.color }))
-  const barSize   = activeData.length <= 2 ? 40 : activeData.length === 3 ? 32 : 26
-
   return (
-    <div className="flex flex-col h-full gap-3">
-      {/* Chart cresce para preencher o espaço disponível */}
-      <div className="flex-1 min-h-0">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData} barSize={barSize} margin={{ top: 4, right: 4, left: -8, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" vertical={false} />
-            <XAxis
-              dataKey="name"
-              tick={{ fill: '#a0a0a0', fontSize: 10 }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              tick={{ fill: '#a0a0a0', fontSize: 10 }}
-              axisLine={false}
-              tickLine={false}
-              allowDecimals={false}
-              width={20}
-            />
-            <Tooltip {...tooltipStyle} cursor={{ fill: 'rgba(0,0,0,0.03)' }} />
-            <Bar dataKey="value" radius={[5, 5, 0, 0]} name="Itens">
-              {chartData.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Resumo inline abaixo do gráfico */}
-      <div className="flex gap-2 flex-shrink-0">
-        <StatPill label="Total"     value={total} />
-        {top && <StatPill label="Maior" value={top.label} color={top.color} />}
-        <StatPill label="Ag. aprovação" value={pending}  color="#f59e0b" />
-        <StatPill label="Aprovados"     value={approved} color="#10b981" />
-      </div>
+    <div className="flex-1 min-h-0 h-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={chartData} barSize={34} margin={{ top: 4, right: 4, left: -8, bottom: 40 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" vertical={false} />
+          <XAxis
+            dataKey="name"
+            tick={{ fill: '#a0a0a0', fontSize: 10 }}
+            axisLine={false}
+            tickLine={false}
+            angle={-28}
+            textAnchor="end"
+            interval={0}
+          />
+          <YAxis
+            tick={{ fill: '#a0a0a0', fontSize: 10 }}
+            axisLine={false}
+            tickLine={false}
+            allowDecimals={false}
+            width={20}
+          />
+          <Tooltip {...tooltipStyle} cursor={{ fill: 'rgba(0,0,0,0.03)' }} />
+          <Bar dataKey="value" radius={[5, 5, 0, 0]} name="Itens">
+            {chartData.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
     </div>
   )
 }

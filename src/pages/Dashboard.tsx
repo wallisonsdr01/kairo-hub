@@ -616,10 +616,10 @@ export function Dashboard() {
     // "Ag. aprovação" = null | vazio | 'pendente_aprovacao'  (isPending estrito)
     // Separado do Resumo que usa isAwaitingApproval (inclui ajuste_realizado)
     setPlannerChartData([
-      { label: 'Aprovados',      value: period_approved,       color: '#10b981' },
-      { label: 'Ag. aprovação',  value: period_pending_strict, color: '#f59e0b' },
-      { label: 'Aj. solicitados',value: period_adjusted,       color: '#f97316' },
-      { label: 'Reprovados',     value: period_rejected,       color: '#ef4444' },
+      { label: 'Aprovados',             value: period_approved,       color: '#10b981' },
+      { label: 'Aguardando aprovação',  value: period_pending_strict, color: '#f59e0b' },
+      { label: 'Ajustes solicitados',   value: period_adjusted,       color: '#f97316' },
+      { label: 'Reprovados',            value: period_rejected,       color: '#ef4444' },
     ])
   }
 
