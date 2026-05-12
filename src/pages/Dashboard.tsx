@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useRef } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import {
   Users, Sparkles, CheckSquare, ArrowRight, Plus, Clock,
   AlertTriangle, TrendingUp, CalendarDays, CheckCircle2,
@@ -301,20 +301,27 @@ const statusDotColor: Record<string, string> = {
 
 // ─── Calendar Widget ──────────────────────────────────────────────────────────
 
-function CalendarWidget({
-  items,
-  onDayClick,
-}: {
-  items: PlannerDay[]
-  onDayClick: () => void
-}) {
-  const today  = startOfToday()
-  const [offset, setOffset] = useState(0)
+function CalendarWidget({ items }: { items: PlannerDay[] }) {
+  const today = startOfToday()
+  const todayStr = format(today, 'yyyy-MM-dd')
+
+  // offset desloca o centro da faixa de 5 dias (em unidades de 5)
+  const [offset, setOffset]         = useState(0)
+  // dia selecionado — começa com hoje
+  const [selectedStr, setSelectedStr] = useState<string>(todayStr)
+
   const center = addDays(today, offset)
   const days   = [-2, -1, 0, 1, 2].map(d => addDays(center, d))
 
-  const todayStr   = format(today, 'yyyy-MM-dd')
-  const todayItems = items.filter(i => i.scheduled_date === todayStr)
+  // itens do dia selecionado
+  const selectedItems = items.filter(i => i.scheduled_date === selectedStr)
+
+  // label do dia selecionado
+  const selectedDate = new Date(selectedStr + 'T12:00:00')
+  const selectedLabel =
+    selectedStr === todayStr
+      ? 'Hoje'
+      : format(selectedDate, "d 'de' MMM", { locale: ptBR })
 
   return (
     <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5">
@@ -346,32 +353,42 @@ function CalendarWidget({
         ))}
       </div>
 
-      {/* Day numbers */}
+      {/* Day numbers — clicar SELECIONA o dia, sem navegar */}
       <div className="grid grid-cols-5 gap-1 mb-4">
         {days.map(day => {
-          const dayStr   = format(day, 'yyyy-MM-dd')
-          const dayItems = items.filter(i => i.scheduled_date === dayStr)
-          const isCurrent = isToday(day)
+          const dayStr    = format(day, 'yyyy-MM-dd')
+          const dayItems  = items.filter(i => i.scheduled_date === dayStr)
+          const isSelected = dayStr === selectedStr
+          const isCurrent  = isToday(day)
           return (
             <div
               key={dayStr}
-              onClick={onDayClick}
+              onClick={() => setSelectedStr(dayStr)}
               className={`flex flex-col items-center py-2.5 rounded-2xl cursor-pointer transition-all duration-150 select-none ${
-                isCurrent
+                isSelected
                   ? 'bg-gray-900'
                   : 'hover:bg-gray-50 border border-transparent hover:border-gray-100'
               }`}
             >
               <span
-                className={`text-[15px] font-semibold leading-none ${isCurrent ? 'text-white' : 'text-gray-800'}`}
-                style={isCurrent ? { color: '#ffffff' } : undefined}
+                className={`text-[15px] font-semibold leading-none`}
+                style={{ color: isSelected ? '#ffffff' : isCurrent ? '#1a1a2e' : '#374151' }}
               >
                 {format(day, 'd')}
               </span>
+              {/* ponto coral no dia de hoje quando não está selecionado */}
+              {isCurrent && !isSelected && (
+                <div className="w-1 h-1 rounded-full mt-1" style={{ background: '#e94560' }} />
+              )}
               {dayItems.length > 0 && (
-                <div className="flex gap-0.5 mt-1.5 justify-center flex-wrap">
+                <div className="flex gap-0.5 mt-1 justify-center flex-wrap">
                   {dayItems.slice(0, 3).map(item => (
-                    <div key={item.id} className={`w-1 h-1 rounded-full ${isCurrent ? 'bg-white/60' : (statusDotColor[item.status] ?? 'bg-gray-400')}`} />
+                    <div
+                      key={item.id}
+                      className={`w-1 h-1 rounded-full ${
+                        isSelected ? 'bg-white/60' : (statusDotColor[item.status] ?? 'bg-gray-400')
+                      }`}
+                    />
                   ))}
                 </div>
               )}
@@ -380,13 +397,15 @@ function CalendarWidget({
         })}
       </div>
 
-      {/* Today's list */}
-      {todayItems.length === 0 ? (
-        <p className="text-[11px] text-gray-400 text-center py-1">Nenhum post hoje</p>
+      {/* Posts do dia selecionado */}
+      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
+        {selectedLabel}
+      </p>
+      {selectedItems.length === 0 ? (
+        <p className="text-[11px] text-gray-400 text-center py-1">Nenhum post nesse dia</p>
       ) : (
         <div className="space-y-1.5">
-          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Hoje</p>
-          {todayItems.slice(0, 3).map(item => (
+          {selectedItems.slice(0, 3).map(item => (
             <div key={item.id} className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-gray-50">
               <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${statusDotColor[item.status] ?? 'bg-gray-300'}`} />
               <p className="text-[12px] text-gray-800 truncate flex-1 font-medium">{item.title}</p>
@@ -395,10 +414,10 @@ function CalendarWidget({
               </span>
             </div>
           ))}
-          {todayItems.length > 3 && (
+          {selectedItems.length > 3 && (
             <Link to="/planner">
               <p className="text-[11px] text-gray-400 hover:text-gray-700 text-center transition-colors mt-1">
-                +{todayItems.length - 3} mais →
+                +{selectedItems.length - 3} mais →
               </p>
             </Link>
           )}
@@ -471,7 +490,6 @@ function AlertsWidget({
 
 export function Dashboard() {
   const { user } = useAuth()
-  const navigate = useNavigate()
 
   // ── Period state (single source of truth) ─────────────────────────────────
   const defaultCustom: DateRange = {
@@ -509,9 +527,9 @@ export function Dashboard() {
     const startDate = format(start, 'yyyy-MM-dd')
     const endDate   = format(end,   'yyyy-MM-dd')
 
-    // Calendar widget: janela fixa de ±2 dias em torno de hoje
-    const calStart = format(subDays(now, 2), 'yyyy-MM-dd')
-    const calEnd   = format(addDays(now, 2), 'yyyy-MM-dd')
+    // Calendário — janela ampla de ±60 dias para suportar navegação
+    const calStart = format(subDays(now, 60), 'yyyy-MM-dd')
+    const calEnd   = format(addDays(now, 60), 'yyyy-MM-dd')
 
     const [
       clientsRes,
@@ -520,6 +538,7 @@ export function Dashboard() {
       contentsRes,
       assetsRes,
       plannerRes,
+      plannerAllRes,
       plannerCalRes,
     ] = await Promise.all([
       // Clientes — sempre global
@@ -547,19 +566,20 @@ export function Dashboard() {
       // Arsenal — sempre global
       supabase.from('content_assets').select('content_type').eq('user_id', user!.id),
 
-      // Planner — itens do período (todas as colunas necessárias para todos os cálculos)
-      // Derivamos pendentes, aprovados e gráfico a partir deste único resultado
-      // usando isAwaitingApproval() — mesma regra do filtro "Pendentes" do Planejamento
+      // Planner PERÍODO — apenas para os KPI cards (ag. aprovação, aprovados no período)
       supabase.from('planner')
         .select('status, approval_status')
-        .eq('user_id', user!.id)
         .gte('scheduled_date', startDate)
         .lte('scheduled_date', endDate),
 
-      // Calendário — janela ao redor de hoje (independe do período selecionado)
+      // Planner GLOBAL — sem filtro de data, para o gráfico de status geral
+      // Usa RLS (mesma abordagem do hook usePlanner)
+      supabase.from('planner')
+        .select('status, approval_status'),
+
+      // Calendário — janela ampla (independe do período selecionado)
       supabase.from('planner')
         .select('id, title, content_type, status, scheduled_date')
-        .eq('user_id', user!.id)
         .gte('scheduled_date', calStart)
         .lte('scheduled_date', calEnd),
     ])
@@ -576,11 +596,10 @@ export function Dashboard() {
     // Atrasadas: métrica global (independe do período)
     const overdue = taskList.filter(t => t.due_date && new Date(t.due_date) < now).length
 
-    // ── Derivar TODOS os contadores de aprovação a partir de plannerRes ────────
-    // Usa isAwaitingApproval() — única fonte de verdade, alinhada com o Planner
-    const pList = plannerRes.data || []
-    const period_pending_approval = pList.filter(isAwaitingApproval).length
-    const period_approved         = pList.filter((p: any) => p.approval_status === 'aprovado').length
+    // ── KPIs de período: usa plannerRes (filtrado por data) ─────────────────────
+    const pPeriod = plannerRes.data || []
+    const period_pending_approval = pPeriod.filter(isAwaitingApproval).length
+    const period_approved         = pPeriod.filter((p: any) => p.approval_status === 'aprovado').length
 
     setStats({
       total_clients:  clients.length,
@@ -602,17 +621,24 @@ export function Dashboard() {
     ;(assetsRes.data || []).forEach((a: any) => { typeMap[a.content_type] = (typeMap[a.content_type] || 0) + 1 })
     setAssetTypes(Object.entries(typeMap).map(([type, count]) => ({ type, count })))
 
-    // Status breakdown do planner
+    // ── Gráfico de planejamento: usa plannerAllRes (GLOBAL, sem filtro de data) ─
+    // Isso garante que o gráfico mostra todos os itens do planner,
+    // independente do período selecionado na Dashboard — mesma abordagem do usePlanner hook
+    const pAll = plannerAllRes.data || []
+
+    // Status breakdown (para debug / extensão futura)
     const statusMap: Record<string, number> = {}
-    pList.forEach((p: any) => { statusMap[p.status] = (statusMap[p.status] || 0) + 1 })
+    pAll.forEach((p: any) => { statusMap[p.status] = (statusMap[p.status] || 0) + 1 })
     setPlannerStatuses(Object.entries(statusMap).map(([status, count]) => ({ status, count })))
 
-    // Gráfico de planejamento — "Ag. aprovação" usa isAwaitingApproval()
+    // Gráfico com TODOS os status do planner
     setPlannerChartData([
-      { label: 'Ideia',         value: pList.filter((p: any) => p.status === 'ideia').length,   color: '#8b5cf6' },
-      { label: 'Revisão',       value: pList.filter((p: any) => p.status === 'revisao').length, color: '#f59e0b' },
-      { label: 'Ag. aprovação', value: pList.filter(isAwaitingApproval).length,                 color: '#f97316' },
-      { label: 'Aprovado',      value: period_approved,                                          color: '#10b981' },
+      { label: 'Ideia',       value: pAll.filter((p: any) => p.status === 'ideia').length,                color: '#8b5cf6' },
+      { label: 'Produção',    value: pAll.filter((p: any) => p.status === 'producao').length,             color: '#3b82f6' },
+      { label: 'Revisão',     value: pAll.filter((p: any) => p.status === 'revisao').length,              color: '#f59e0b' },
+      { label: 'Aprovado',    value: pAll.filter((p: any) => p.status === 'aprovado').length,             color: '#10b981' },
+      { label: 'Publicado',   value: pAll.filter((p: any) => p.status === 'publicado').length,            color: '#059669' },
+      { label: 'Reprovado',   value: pAll.filter((p: any) => p.status === 'reprovado').length,            color: '#ef4444' },
     ])
   }
 
@@ -674,7 +700,6 @@ export function Dashboard() {
           <div className="flex flex-col gap-5">
             <CalendarWidget
               items={plannerCalItems}
-              onDayClick={() => navigate('/planner')}
             />
             <AlertsWidget
               pendingApproval={stats.period_pending_approval}
