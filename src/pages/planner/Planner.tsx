@@ -1369,7 +1369,7 @@ export function Planner() {
                   item={item}
                   onView={() => openItemView(item)}
                   onEdit={() => openEdit(item)}
-                  onDelete={() => deleteItem.mutateAsync(item.id)}
+                  onDelete={() => deleteItem.mutateAsync(item.id).catch((err: any) => toast(err.message || 'Erro ao excluir.', 'error'))}
                 />
               ))
             )}

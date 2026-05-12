@@ -51,6 +51,36 @@ export function useDeletePlannerItem() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (id: string) => {
+      // 1. Busca os anexos para deletar do storage também
+      const { data: attachments } = await supabase
+        .from('planner_attachments')
+        .select('id, file_url')
+        .eq('planner_id', id)
+
+      // 2. Remove arquivos do storage
+      if (attachments && attachments.length > 0) {
+        const paths = attachments
+          .map(a => {
+            try {
+              const url = new URL(a.file_url)
+              // extrai o path após "/object/public/planner-attachments/"
+              const match = url.pathname.match(/\/object\/public\/planner-attachments\/(.+)/)
+              return match ? match[1] : null
+            } catch { return null }
+          })
+          .filter(Boolean) as string[]
+
+        if (paths.length > 0) {
+          await supabase.storage.from('planner-attachments').remove(paths)
+        }
+      }
+
+      // 3. Deleta registros filhos (links, anexos, comentários)
+      await supabase.from('planner_links').delete().eq('planner_id', id)
+      await supabase.from('planner_attachments').delete().eq('planner_id', id)
+      await supabase.from('planner_comments').delete().eq('planner_id', id)
+
+      // 4. Deleta o item principal
       const { error } = await supabase.from('planner').delete().eq('id', id)
       if (error) throw error
     },
