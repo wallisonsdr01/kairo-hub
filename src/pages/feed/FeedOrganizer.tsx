@@ -4,18 +4,10 @@ import {
   useDroppable, useDraggable,
 } from '@dnd-kit/core'
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'
-
-// arrayMove não está nesta versão do @dnd-kit/utilities — implementação local
-function arrayMove<T>(arr: T[], from: number, to: number): T[] {
-  const result = [...arr]
-  const [item] = result.splice(from, 1)
-  result.splice(to, 0, item)
-  return result
-}
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, Trash2, Pencil, Check, X, ChevronDown, Upload,
-  Images, GripVertical, Instagram, Copy,
+  Images, GripVertical, Instagram, Copy, Link2,
 } from 'lucide-react'
 import { Header } from '@/components/layout/Header'
 import { Button } from '@/components/ui/button'
@@ -25,7 +17,16 @@ import { useContentAssets } from '@/hooks/useContentAssets'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/components/ui/toast'
 import { supabase } from '@/integrations/supabase/client'
-import type { ContentAsset } from '@/types'
+import type { ContentAsset, Client } from '@/types'
+
+// ─── arrayMove (local) ────────────────────────────────────────────────────────
+
+function arrayMove<T>(arr: T[], from: number, to: number): T[] {
+  const result = [...arr]
+  const [item] = result.splice(from, 1)
+  result.splice(to, 0, item)
+  return result
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -45,34 +46,208 @@ interface FeedVersion {
   updated_at: string
 }
 
-// ─── localStorage helpers ─────────────────────────────────────────────────────
-
-const STORAGE_KEY = 'kairohub_feed_v1'
-
-function loadAll(): Record<string, FeedVersion[]> {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')
-  } catch {
-    return {}
-  }
+interface FeedClientMeta {
+  bio: string
+  link: string
 }
 
+// ─── localStorage helpers ─────────────────────────────────────────────────────
+
+const STORAGE_KEY  = 'kairohub_feed_v1'
+const META_KEY     = 'kairohub_feed_meta_v1'
+
+function loadAll(): Record<string, FeedVersion[]> {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') } catch { return {} }
+}
 function saveAll(data: Record<string, FeedVersion[]>) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
 }
-
 function loadVersions(userId: string, clientId: string): FeedVersion[] {
-  const key = `${userId}__${clientId}`
-  return loadAll()[key] || []
+  return loadAll()[`${userId}__${clientId}`] || []
 }
-
 function persistVersions(userId: string, clientId: string, versions: FeedVersion[]) {
   const all = loadAll()
   all[`${userId}__${clientId}`] = versions
   saveAll(all)
 }
 
-// ─── DnD: Post card (draggable) ───────────────────────────────────────────────
+function loadMeta(userId: string, clientId: string): FeedClientMeta {
+  try {
+    const all = JSON.parse(localStorage.getItem(META_KEY) || '{}')
+    return all[`${userId}__${clientId}`] || { bio: '', link: '' }
+  } catch { return { bio: '', link: '' } }
+}
+function persistMeta(userId: string, clientId: string, meta: FeedClientMeta) {
+  try {
+    const all = JSON.parse(localStorage.getItem(META_KEY) || '{}')
+    all[`${userId}__${clientId}`] = meta
+    localStorage.setItem(META_KEY, JSON.stringify(all))
+  } catch {}
+}
+
+// ─── Instagram Profile Header ─────────────────────────────────────────────────
+
+function InstagramHeader({
+  client, postsCount, meta, onMetaChange,
+}: {
+  client: Client
+  postsCount: number
+  meta: FeedClientMeta
+  onMetaChange: (m: FeedClientMeta) => void
+}) {
+  const [editingBio, setEditingBio] = useState(false)
+  const [bioValue,   setBioValue]   = useState(meta.bio)
+  const [linkValue,  setLinkValue]  = useState(meta.link)
+
+  const saveBio = () => {
+    onMetaChange({ bio: bioValue.trim(), link: linkValue.trim() })
+    setEditingBio(false)
+  }
+
+  const initial = client.company_name.charAt(0).toUpperCase()
+
+  return (
+    <div className="bg-white rounded-2xl border border-[#e8e8e8] shadow-sm px-6 py-5">
+      <div className="flex items-start gap-6">
+
+        {/* Avatar */}
+        <div className="flex-shrink-0">
+          <div className="relative">
+            {/* Instagram gradient ring */}
+            <div className="w-20 h-20 rounded-full p-[2px]"
+              style={{ background: 'linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)' }}>
+              <div className="w-full h-full rounded-full bg-white p-[2px]">
+                {client.logo_url ? (
+                  <img
+                    src={client.logo_url}
+                    alt={client.company_name}
+                    className="w-full h-full rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full rounded-full bg-[#f0f0f0] flex items-center justify-center">
+                    <span className="text-2xl font-bold text-[#737373]">{initial}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Info */}
+        <div className="flex-1 min-w-0 space-y-2.5">
+          {/* Username row */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <h2 className="text-[15px] font-semibold text-[#0f0f0f] leading-none">
+              {client.instagram
+                ? client.instagram.replace(/^@/, '')
+                : client.company_name.toLowerCase().replace(/\s+/g, '_')}
+            </h2>
+            {client.instagram && (
+              <span className="text-xs text-[#a0a0a0]">@{client.instagram.replace(/^@/, '')}</span>
+            )}
+            {!editingBio && (
+              <button
+                onClick={() => { setEditingBio(true); setBioValue(meta.bio); setLinkValue(meta.link) }}
+                className="flex items-center gap-1 text-[11px] text-[#737373] hover:text-[#0f0f0f] transition-colors"
+              >
+                <Pencil className="w-3 h-3" /> Editar bio
+              </button>
+            )}
+          </div>
+
+          {/* Stats row */}
+          <div className="flex items-center gap-6">
+            <div className="text-center">
+              <p className="text-[13px] font-semibold text-[#0f0f0f]">{postsCount}</p>
+              <p className="text-[11px] text-[#737373]">posts</p>
+            </div>
+            <div className="text-center">
+              <p className="text-[13px] font-semibold text-[#0f0f0f]">—</p>
+              <p className="text-[11px] text-[#737373]">seguidores</p>
+            </div>
+            <div className="text-center">
+              <p className="text-[13px] font-semibold text-[#0f0f0f]">—</p>
+              <p className="text-[11px] text-[#737373]">seguindo</p>
+            </div>
+          </div>
+
+          {/* Bio / editing */}
+          {editingBio ? (
+            <div className="space-y-2">
+              <textarea
+                autoFocus
+                value={bioValue}
+                onChange={e => setBioValue(e.target.value)}
+                placeholder="Escreva a bio do cliente..."
+                rows={3}
+                className="w-full text-sm text-[#0f0f0f] border border-[#e8e8e8] rounded-xl px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-[#1a1a2e]/20 focus:border-[#1a1a2e] placeholder:text-[#c0c0c0]"
+              />
+              <input
+                value={linkValue}
+                onChange={e => setLinkValue(e.target.value)}
+                placeholder="Link (ex: linktr.ee/cliente)"
+                className="w-full text-sm text-[#0f0f0f] border border-[#e8e8e8] rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#1a1a2e]/20 focus:border-[#1a1a2e] placeholder:text-[#c0c0c0]"
+              />
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={saveBio}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium text-white transition-colors"
+                  style={{ background: '#1a1a2e' }}
+                >
+                  <Check className="w-3.5 h-3.5" /> Salvar
+                </button>
+                <button
+                  onClick={() => setEditingBio(false)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium text-[#737373] border border-[#e8e8e8] hover:bg-[#f5f5f5] transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" /> Cancelar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-0.5">
+              {meta.bio ? (
+                <p className="text-sm text-[#0f0f0f] leading-relaxed whitespace-pre-wrap">{meta.bio}</p>
+              ) : (
+                <p
+                  className="text-sm text-[#c0c0c0] cursor-pointer hover:text-[#a0a0a0] transition-colors"
+                  onClick={() => setEditingBio(true)}
+                >
+                  Clique em "Editar bio" para adicionar uma descrição...
+                </p>
+              )}
+              {meta.link && (
+                <div className="flex items-center gap-1.5 mt-1">
+                  <Link2 className="w-3 h-3 text-[#e94560]" />
+                  <a
+                    href={meta.link.startsWith('http') ? meta.link : `https://${meta.link}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[12px] text-[#1a1a2e] font-medium hover:underline"
+                  >
+                    {meta.link.replace(/^https?:\/\//, '')}
+                  </a>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Niche badge */}
+      {client.niche && (
+        <div className="mt-3 pt-3 border-t border-[#f5f5f5]">
+          <span className="inline-flex items-center gap-1 text-[11px] text-[#737373] bg-[#f5f5f5] px-2.5 py-1 rounded-full">
+            <Instagram className="w-3 h-3 text-[#e94560]" />
+            {client.niche}
+          </span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── DnD: Post card (draggable + droppable) ───────────────────────────────────
 
 function DraggableCard({
   post, index, onRemove, isActive,
@@ -140,7 +315,7 @@ function DraggableCard({
   )
 }
 
-// ─── DnD: Empty slot (droppable) ─────────────────────────────────────────────
+// ─── Empty slot (droppable) ───────────────────────────────────────────────────
 
 function EmptySlot({ index, onAdd }: { index: number; onAdd: () => void }) {
   const { setNodeRef, isOver } = useDroppable({ id: `cell-${index}` })
@@ -173,8 +348,8 @@ function VersionChip({
   onDuplicate: () => void
 }) {
   const [editing, setEditing] = useState(false)
-  const [value, setValue] = useState(version.name)
-  const [menu, setMenu] = useState(false)
+  const [value,   setValue]   = useState(version.name)
+  const [menu,    setMenu]    = useState(false)
 
   const save = () => {
     const trimmed = value.trim()
@@ -188,9 +363,7 @@ function VersionChip({
         className={`
           flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium cursor-pointer
           transition-all duration-150 whitespace-nowrap
-          ${isActive
-            ? 'text-white shadow-sm'
-            : 'bg-[#f0f0f0] text-[#737373] hover:bg-[#e8e8e8]'}
+          ${isActive ? 'text-white shadow-sm' : 'bg-[#f0f0f0] text-[#737373] hover:bg-[#e8e8e8]'}
         `}
         style={isActive ? { background: '#1a1a2e' } : undefined}
         onClick={onClick}
@@ -203,7 +376,7 @@ function VersionChip({
             onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false) }}
             onBlur={save}
             onClick={e => e.stopPropagation()}
-            className="bg-transparent outline-none w-20 text-[12px]"
+            className="bg-transparent outline-none w-20 text-[12px] text-white"
           />
         ) : (
           <span>{version.name}</span>
@@ -290,13 +463,15 @@ function AssetPickerDialog({
         <div className="flex gap-1 p-1 bg-[#f5f5f5] rounded-xl mb-4">
           {[
             { id: 'arsenal', label: 'Arsenal de conteúdo', icon: Images },
-            { id: 'upload', label: 'Upload de imagem', icon: Upload },
+            { id: 'upload',  label: 'Upload de imagem',    icon: Upload },
           ].map(t => (
             <button
               key={t.id}
               onClick={() => setTab(t.id as any)}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[12px] font-medium transition-all ${
-                tab === t.id ? 'bg-white text-[#0f0f0f] shadow-sm' : 'text-[#737373] hover:text-[#0f0f0f]'
+                tab === t.id
+                  ? 'bg-white text-[#0f0f0f] shadow-sm'
+                  : 'text-[#737373] hover:text-[#0f0f0f]'
               }`}
             >
               <t.icon className="w-3.5 h-3.5" />
@@ -312,7 +487,9 @@ function AssetPickerDialog({
                 <Images className="w-10 h-10 mb-3 opacity-40" />
                 <p className="text-sm">Nenhuma imagem no arsenal</p>
                 <p className="text-xs mt-1">
-                  {clientId ? 'Adicione imagens na Biblioteca para este cliente.' : 'Selecione um cliente ou adicione imagens na Biblioteca.'}
+                  {clientId
+                    ? 'Adicione imagens na Biblioteca para este cliente.'
+                    : 'Selecione um cliente ou adicione imagens na Biblioteca.'}
                 </p>
               </div>
             ) : (
@@ -323,11 +500,7 @@ function AssetPickerDialog({
                     onClick={() => { onSelect(asset); onClose() }}
                     className="aspect-square rounded-lg overflow-hidden border-2 border-transparent hover:border-[#1a1a2e] transition-all hover:scale-[1.02] group relative"
                   >
-                    <img
-                      src={asset.media_url!}
-                      alt={asset.title}
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={asset.media_url!} alt={asset.title} className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-end p-2 opacity-0 group-hover:opacity-100">
                       <span className="text-[10px] text-white font-medium line-clamp-2 leading-tight">
                         {asset.title}
@@ -370,38 +543,46 @@ function AssetPickerDialog({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function FeedOrganizer() {
-  const { user } = useAuth()
+  const { user }  = useAuth()
   const { toast } = useToast()
   const { data: clients } = useClients()
 
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
-  const [clientMenuOpen, setClientMenuOpen] = useState(false)
-  const [versions, setVersions] = useState<FeedVersion[]>([])
-  const [activeVersionId, setActiveVersionId] = useState<string | null>(null)
-  const [activeDragId, setActiveDragId] = useState<string | null>(null)
-  const [pickerOpen, setPickerOpen] = useState(false)
-  const [isUploading, setIsUploading] = useState(false)
-  const [hasLoaded, setHasLoaded] = useState(false)
+  const [clientMenuOpen,   setClientMenuOpen]   = useState(false)
+  const [versions,         setVersions]         = useState<FeedVersion[]>([])
+  const [activeVersionId,  setActiveVersionId]  = useState<string | null>(null)
+  const [activeDragId,     setActiveDragId]     = useState<string | null>(null)
+  const [pickerOpen,       setPickerOpen]       = useState(false)
+  const [isUploading,      setIsUploading]      = useState(false)
+  const [clientMeta,       setClientMeta]       = useState<FeedClientMeta>({ bio: '', link: '' })
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
   )
 
-  // ── Load versions when client changes ──────────────────────────────────────
+  // ── Load data when client changes ──────────────────────────────────────────
 
-  const loadClientVersions = useCallback((clientId: string) => {
+  const loadClientData = useCallback((clientId: string) => {
     if (!user) return
-    const vv = loadVersions(user.id, clientId)
+    const vv   = loadVersions(user.id, clientId)
+    const meta = loadMeta(user.id, clientId)
     setVersions(vv)
     setActiveVersionId(vv[0]?.id ?? null)
-    setHasLoaded(true)
+    setClientMeta(meta)
   }, [user])
 
   const handleSelectClient = (clientId: string) => {
     setSelectedClientId(clientId)
     setClientMenuOpen(false)
-    setHasLoaded(false)
-    loadClientVersions(clientId)
+    loadClientData(clientId)
+  }
+
+  // ── Meta (bio + link) ──────────────────────────────────────────────────────
+
+  const handleMetaChange = (meta: FeedClientMeta) => {
+    if (!user || !selectedClientId) return
+    setClientMeta(meta)
+    persistMeta(user.id, selectedClientId, meta)
   }
 
   // ── Version helpers ────────────────────────────────────────────────────────
@@ -414,11 +595,10 @@ export function FeedOrganizer() {
 
   const createVersion = () => {
     if (!selectedClientId || !user) return
-    const count = versions.length + 1
     const newV: FeedVersion = {
       id: crypto.randomUUID(),
       client_id: selectedClientId,
-      name: `Versão ${count}`,
+      name: `Versão ${versions.length + 1}`,
       posts: [],
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -428,9 +608,8 @@ export function FeedOrganizer() {
     setActiveVersionId(newV.id)
   }
 
-  const renameVersion = (id: string, name: string) => {
+  const renameVersion = (id: string, name: string) =>
     persist(versions.map(v => v.id === id ? { ...v, name, updated_at: new Date().toISOString() } : v))
-  }
 
   const deleteVersion = (id: string) => {
     const updated = versions.filter(v => v.id !== id)
@@ -448,49 +627,37 @@ export function FeedOrganizer() {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }
-    const updated = [...versions, newV]
-    persist(updated)
+    persist([...versions, newV])
     setActiveVersionId(newV.id)
   }
 
-  // ── Post helpers ───────────────────────────────────────────────────────────
+  // ── Posts ──────────────────────────────────────────────────────────────────
 
   const activeVersion = versions.find(v => v.id === activeVersionId) ?? null
   const posts = activeVersion?.posts ?? []
 
-  const updatePosts = (newPosts: FeedPost[]) => {
+  const updatePosts = (newPosts: FeedPost[]) =>
     persist(versions.map(v =>
       v.id === activeVersionId
         ? { ...v, posts: newPosts, updated_at: new Date().toISOString() }
         : v
     ))
-  }
 
   const addPostFromAsset = (asset: ContentAsset) => {
     if (!asset.media_url) return
-    const newPost: FeedPost = {
-      id: crypto.randomUUID(),
-      image_url: asset.media_url,
-      caption: asset.title,
-      asset_id: asset.id,
-    }
-    updatePosts([...posts, newPost])
+    updatePosts([...posts, { id: crypto.randomUUID(), image_url: asset.media_url, caption: asset.title, asset_id: asset.id }])
   }
 
   const addPostFromUpload = async (file: File) => {
     if (!user) return
     setIsUploading(true)
     try {
-      const ext = file.name.split('.').pop() || 'jpg'
+      const ext  = file.name.split('.').pop() || 'jpg'
       const path = `${user.id}/feed/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
       const { error } = await supabase.storage.from('content-assets').upload(path, file)
       if (error) throw error
       const { data: { publicUrl } } = supabase.storage.from('content-assets').getPublicUrl(path)
-      const newPost: FeedPost = {
-        id: crypto.randomUUID(),
-        image_url: publicUrl,
-      }
-      updatePosts([...posts, newPost])
+      updatePosts([...posts, { id: crypto.randomUUID(), image_url: publicUrl }])
       toast('Imagem adicionada ao feed!', 'success')
     } catch (err: any) {
       toast(err.message || 'Erro ao fazer upload.', 'error')
@@ -499,45 +666,31 @@ export function FeedOrganizer() {
     }
   }
 
-  const removePost = (postId: string) => {
-    updatePosts(posts.filter(p => p.id !== postId))
-  }
+  const removePost = (postId: string) => updatePosts(posts.filter(p => p.id !== postId))
 
-  // ── DnD handlers ──────────────────────────────────────────────────────────
+  // ── DnD ───────────────────────────────────────────────────────────────────
 
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveDragId(String(event.active.id))
-  }
+  const handleDragStart = (event: DragStartEvent) => setActiveDragId(String(event.active.id))
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
     setActiveDragId(null)
     if (!over) return
-
     const fromIndex = posts.findIndex(p => p.id === active.id)
-    const overId = String(over.id) // "cell-N"
-    const toIndex = parseInt(overId.replace('cell-', ''), 10)
-
-    if (fromIndex === -1 || fromIndex === toIndex || isNaN(toIndex)) return
-
-    // If dropping on an empty slot beyond posts, move to end
+    const toIndex   = parseInt(String(over.id).replace('cell-', ''), 10)
+    if (fromIndex === -1 || isNaN(toIndex) || fromIndex === toIndex) return
     const finalIndex = toIndex >= posts.length ? posts.length - 1 : toIndex
     updatePosts(arrayMove(posts, fromIndex, finalIndex))
   }
 
-  // ── Grid: show posts + 3 empty slots at the end ────────────────────────────
+  // ── Grid cells ─────────────────────────────────────────────────────────────
 
   const EMPTY_SLOTS = 3
-  const totalCells = posts.length + EMPTY_SLOTS
-  const gridCells = Array.from({ length: totalCells }, (_, i) => ({
-    index: i,
-    post: posts[i] ?? null,
+  const gridCells = Array.from({ length: posts.length + EMPTY_SLOTS }, (_, i) => ({
+    index: i, post: posts[i] ?? null,
   }))
 
   const activeDragPost = activeDragId ? posts.find(p => p.id === activeDragId) : null
-
-  // ── Client name lookup ─────────────────────────────────────────────────────
-
   const selectedClient = clients?.find(c => c.id === selectedClientId)
 
   return (
@@ -545,22 +698,22 @@ export function FeedOrganizer() {
       <Header title="Feed do Perfil" />
 
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-5">
 
           {/* ── Client selector ── */}
           <div className="flex items-center gap-4 flex-wrap">
             <div className="relative">
               <button
                 onClick={() => setClientMenuOpen(m => !m)}
-                className="flex items-center gap-2.5 h-10 px-4 bg-white border border-[#e8e8e8] rounded-xl text-sm text-[#0f0f0f] hover:border-[#d0d0d0] transition-colors shadow-sm min-w-[200px] justify-between"
+                className="flex items-center gap-2.5 h-10 px-4 bg-white border border-[#e8e8e8] rounded-xl text-sm hover:border-[#d0d0d0] transition-colors shadow-sm min-w-[220px] justify-between"
               >
                 <div className="flex items-center gap-2">
-                  <Instagram className="w-4 h-4 text-[#e94560]" />
+                  <Instagram className="w-4 h-4 text-[#e94560] flex-shrink-0" />
                   <span className={selectedClient ? 'text-[#0f0f0f]' : 'text-[#a0a0a0]'}>
                     {selectedClient?.company_name ?? 'Selecionar cliente'}
                   </span>
                 </div>
-                <ChevronDown className="w-4 h-4 text-[#a0a0a0]" />
+                <ChevronDown className="w-4 h-4 text-[#a0a0a0] flex-shrink-0" />
               </button>
 
               <AnimatePresence>
@@ -582,20 +735,18 @@ export function FeedOrganizer() {
                             key={c.id}
                             onClick={() => handleSelectClient(c.id)}
                             className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors
-                              ${selectedClientId === c.id
-                                ? 'bg-[#f0f0f0] text-[#0f0f0f] font-medium'
-                                : 'text-[#0f0f0f] hover:bg-[#f5f5f5]'}
+                              ${selectedClientId === c.id ? 'bg-[#f0f0f0] text-[#0f0f0f] font-medium' : 'text-[#0f0f0f] hover:bg-[#f5f5f5]'}
                             `}
                           >
                             {c.logo_url ? (
-                              <img src={c.logo_url} alt="" className="w-6 h-6 rounded-full object-cover" />
+                              <img src={c.logo_url} alt="" className="w-6 h-6 rounded-full object-cover flex-shrink-0" />
                             ) : (
-                              <div className="w-6 h-6 rounded-full bg-[#e8e8e8] flex items-center justify-center text-[10px] font-bold text-[#737373]">
+                              <div className="w-6 h-6 rounded-full bg-[#e8e8e8] flex items-center justify-center text-[10px] font-bold text-[#737373] flex-shrink-0">
                                 {c.company_name.charAt(0)}
                               </div>
                             )}
-                            {c.company_name}
-                            {selectedClientId === c.id && <Check className="w-3.5 h-3.5 ml-auto text-[#1a1a2e]" />}
+                            <span className="truncate">{c.company_name}</span>
+                            {selectedClientId === c.id && <Check className="w-3.5 h-3.5 ml-auto text-[#1a1a2e] flex-shrink-0" />}
                           </button>
                         ))
                       )}
@@ -604,25 +755,30 @@ export function FeedOrganizer() {
                 )}
               </AnimatePresence>
             </div>
-
-            {selectedClient && (
-              <p className="text-xs text-[#a0a0a0]">
-                {posts.length} {posts.length === 1 ? 'post' : 'posts'} na versão atual
-              </p>
-            )}
           </div>
 
-          {/* ── No client selected ── */}
+          {/* ── Empty state ── */}
           {!selectedClientId && (
             <div className="flex flex-col items-center justify-center py-24 text-[#a0a0a0]">
-              <Instagram className="w-14 h-14 mb-4 opacity-20" />
-              <p className="text-base font-medium text-[#737373]">Selecione um cliente para começar</p>
+              <div className="w-20 h-20 rounded-full mb-5 flex items-center justify-center"
+                style={{ background: 'linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)' }}>
+                <Instagram className="w-9 h-9 text-white" />
+              </div>
+              <p className="text-base font-semibold text-[#737373]">Selecione um cliente para começar</p>
               <p className="text-sm mt-1">Organize o feed do Instagram do seu cliente de forma visual.</p>
             </div>
           )}
 
-          {selectedClientId && (
+          {selectedClientId && selectedClient && (
             <>
+              {/* ── Instagram profile header ── */}
+              <InstagramHeader
+                client={selectedClient}
+                postsCount={posts.length}
+                meta={clientMeta}
+                onMetaChange={handleMetaChange}
+              />
+
               {/* ── Version chips ── */}
               <div className="bg-white rounded-2xl border border-[#e8e8e8] shadow-sm p-4">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -653,15 +809,19 @@ export function FeedOrganizer() {
                 </div>
               </div>
 
-              {/* ── No version selected ── */}
+              {/* ── No version ── */}
               {!activeVersion && (
-                <div className="flex flex-col items-center justify-center py-20 text-[#a0a0a0]">
+                <div className="flex flex-col items-center justify-center py-16 text-[#a0a0a0]">
                   <GripVertical className="w-10 h-10 mb-3 opacity-20" />
                   <p className="text-sm font-medium text-[#737373]">Crie uma versão para começar</p>
                   <p className="text-xs mt-1">Você pode ter várias versões do feed e comparar.</p>
-                  <Button variant="outline" size="sm" className="mt-4" onClick={createVersion}>
+                  <button
+                    onClick={createVersion}
+                    className="mt-4 flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-medium text-white transition-colors"
+                    style={{ background: '#1a1a2e' }}
+                  >
                     <Plus className="w-3.5 h-3.5" /> Criar Versão 1
-                  </Button>
+                  </button>
                 </div>
               )}
 
@@ -677,21 +837,20 @@ export function FeedOrganizer() {
                         3 colunas · {posts.length} posts
                       </span>
                     </div>
-                    <Button
-                      size="sm"
+                    <button
                       onClick={() => setPickerOpen(true)}
                       disabled={isUploading}
-                      style={{ background: '#1a1a2e', color: '#fff' }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[13px] font-medium text-white transition-colors disabled:opacity-60"
+                      style={{ background: '#1a1a2e' }}
                     >
-                      {isUploading ? (
-                        <><Upload className="w-3.5 h-3.5 animate-pulse" /> Enviando...</>
-                      ) : (
-                        <><Plus className="w-3.5 h-3.5" /> Adicionar post</>
-                      )}
-                    </Button>
+                      {isUploading
+                        ? <><Upload className="w-3.5 h-3.5 animate-pulse" /> Enviando...</>
+                        : <><Plus className="w-3.5 h-3.5" /> Adicionar post</>
+                      }
+                    </button>
                   </div>
 
-                  {/* Hint */}
+                  {/* Hint bar */}
                   <div className="px-4 py-2 bg-[#fafafa] border-b border-[#f0f0f0]">
                     <p className="text-[11px] text-[#a0a0a0] flex items-center gap-1.5">
                       <GripVertical className="w-3 h-3" />
@@ -699,12 +858,8 @@ export function FeedOrganizer() {
                     </p>
                   </div>
 
-                  {/* 3-col Instagram grid */}
-                  <DndContext
-                    sensors={sensors}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
-                  >
+                  {/* 3-col grid */}
+                  <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
                     <div className="grid grid-cols-3 gap-[2px] p-[2px] bg-[#f0f0f0]">
                       {gridCells.map(({ index, post }) =>
                         post ? (
@@ -727,8 +882,10 @@ export function FeedOrganizer() {
 
                     <DragOverlay dropAnimation={{ duration: 180, easing: 'ease' }}>
                       {activeDragPost ? (
-                        <div className="aspect-square rounded-[2px] overflow-hidden shadow-2xl ring-2 ring-blue-400 opacity-95"
-                          style={{ width: 160, height: 160 }}>
+                        <div
+                          className="rounded-[2px] overflow-hidden shadow-2xl ring-2 ring-blue-400 opacity-95"
+                          style={{ width: 160, height: 160 }}
+                        >
                           <img
                             src={activeDragPost.image_url}
                             alt=""
@@ -745,9 +902,13 @@ export function FeedOrganizer() {
                       <Images className="w-10 h-10 mb-3 opacity-20" />
                       <p className="text-sm font-medium text-[#737373]">Feed vazio</p>
                       <p className="text-xs mt-1">Adicione posts do arsenal ou faça upload de imagens.</p>
-                      <Button variant="outline" size="sm" className="mt-4" onClick={() => setPickerOpen(true)}>
+                      <button
+                        onClick={() => setPickerOpen(true)}
+                        className="mt-4 flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-medium text-white"
+                        style={{ background: '#1a1a2e' }}
+                      >
                         <Plus className="w-3.5 h-3.5" /> Adicionar primeiro post
-                      </Button>
+                      </button>
                     </div>
                   )}
                 </div>
@@ -757,7 +918,6 @@ export function FeedOrganizer() {
         </div>
       </div>
 
-      {/* ── Asset picker dialog ── */}
       <AssetPickerDialog
         open={pickerOpen}
         onClose={() => setPickerOpen(false)}
