@@ -85,6 +85,26 @@ function Wordmark({
   )
 }
 
+// ── Logo panel — tenta carregar logo.png, fallback para Wordmark ───────────────
+
+function LogoPanel() {
+  const [imgError, setImgError] = useState(false)
+
+  if (imgError) {
+    return <Wordmark size="lg" theme="light" />
+  }
+
+  return (
+    <img
+      src="/logo.png"
+      alt="Kairo Hub"
+      className="w-full max-w-[300px] object-contain select-none drop-shadow-2xl"
+      draggable={false}
+      onError={() => setImgError(true)}
+    />
+  )
+}
+
 // ── Login page ─────────────────────────────────────────────────────────────────
 
 export function Login() {
@@ -129,12 +149,7 @@ export function Login() {
 
         {/* Logo */}
         <div className="relative z-10 flex items-center justify-center w-full">
-          <img
-            src="/logo.png"
-            alt="Kairo Hub"
-            className="w-full max-w-[300px] object-contain select-none drop-shadow-2xl"
-            draggable={false}
-          />
+          <LogoPanel />
         </div>
       </div>
 
