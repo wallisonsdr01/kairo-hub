@@ -154,8 +154,8 @@ function FeedGalleryCard({
       <div className="px-3 pb-2 flex gap-1 flex-wrap">
         {versions.slice(0, 3).map((v, i) => (
           <span key={v.id} className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-            i === 0 ? 'text-white' : 'text-[#737373] bg-[#f0f0f0]'
-          }`} style={i === 0 ? { background: '#1a1a2e' } : undefined}>
+            i === 0 ? '' : 'text-[#737373] bg-[#f0f0f0]'
+          }`} style={i === 0 ? { background: '#1a1a2e', color: '#ffffff' } : undefined}>
             {v.name}
           </span>
         ))}
@@ -170,8 +170,8 @@ function FeedGalleryCard({
       <div className="border-t border-[#f5f5f5] px-3 py-2">
         <button
           onClick={onEdit}
-          className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[12px] font-medium text-white transition-colors"
-          style={{ background: '#1a1a2e' }}
+          className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
+          style={{ background: '#1a1a2e', color: '#ffffff' }}
         >
           <Pencil className="w-3 h-3" /> Editar feed
         </button>
@@ -270,8 +270,8 @@ function InstagramHeader({
               />
               <div className="flex items-center gap-2">
                 <button onClick={saveBio}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium text-white"
-                  style={{ background: '#1a1a2e' }}>
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium"
+                  style={{ background: '#1a1a2e', color: '#ffffff' }}>
                   <Check className="w-3.5 h-3.5" /> Salvar
                 </button>
                 <button onClick={() => setEditingBio(false)}
@@ -384,15 +384,15 @@ function VersionChip({ version, isActive, onClick, onRename, onDelete, onDuplica
     <div className="relative">
       <div
         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium cursor-pointer transition-all whitespace-nowrap
-          ${isActive ? 'text-white shadow-sm' : 'bg-[#f0f0f0] text-[#737373] hover:bg-[#e8e8e8]'}`}
-        style={isActive ? { background: '#1a1a2e' } : undefined}
+          ${isActive ? 'shadow-sm' : 'bg-[#f0f0f0] text-[#737373] hover:bg-[#e8e8e8]'}`}
+        style={isActive ? { background: '#1a1a2e', color: '#ffffff' } : undefined}
         onClick={onClick}
       >
         {editing ? (
           <input autoFocus value={value} onChange={e => setValue(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false) }}
             onBlur={save} onClick={e => e.stopPropagation()}
-            className="bg-transparent outline-none w-20 text-[12px] text-white" />
+            className="bg-transparent outline-none w-20 text-[12px]" style={{ color: '#ffffff' }} />
         ) : <span>{version.name}</span>}
         <button onClick={e => { e.stopPropagation(); setMenu(m => !m) }}
           className={`rounded-full p-0.5 ${isActive ? 'hover:bg-white/20' : 'hover:bg-[#d0d0d0]'}`}>
@@ -681,8 +681,8 @@ export function FeedOrganizer() {
               <div className="relative">
                 <button
                   onClick={() => setClientMenuOpen(m => !m)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-medium text-white transition-colors"
-                  style={{ background: '#1a1a2e' }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-medium transition-colors"
+                  style={{ background: '#1a1a2e', color: '#ffffff' }}
                 >
                   <Plus className="w-3.5 h-3.5" /> Novo feed
                 </button>
@@ -868,8 +868,8 @@ export function FeedOrganizer() {
                   <GripVertical className="w-10 h-10 mb-3 text-[#d0d0d0]" />
                   <p className="text-sm font-medium text-[#737373]">Crie uma versão para começar</p>
                   <button onClick={createVersion}
-                    className="mt-4 flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-medium text-white"
-                    style={{ background: '#1a1a2e' }}>
+                    className="mt-4 flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-medium"
+                    style={{ background: '#1a1a2e', color: '#ffffff' }}>
                     <Plus className="w-3.5 h-3.5" /> Criar Versão 1
                   </button>
                 </div>
@@ -887,8 +887,8 @@ export function FeedOrganizer() {
                       </span>
                     </div>
                     <button onClick={() => setPickerOpen(true)} disabled={isUploading}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[13px] font-medium text-white disabled:opacity-60"
-                      style={{ background: '#1a1a2e' }}>
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[13px] font-medium disabled:opacity-60"
+                      style={{ background: '#1a1a2e', color: '#ffffff' }}>
                       {isUploading
                         ? <><Upload className="w-3.5 h-3.5 animate-pulse" /> Enviando...</>
                         : <><Plus className="w-3.5 h-3.5" /> Adicionar post</>}
@@ -928,8 +928,8 @@ export function FeedOrganizer() {
                       <Images className="w-10 h-10 mb-3 text-[#d0d0d0]" />
                       <p className="text-sm font-medium text-[#737373]">Feed vazio</p>
                       <button onClick={() => setPickerOpen(true)}
-                        className="mt-4 flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-medium text-white"
-                        style={{ background: '#1a1a2e' }}>
+                        className="mt-4 flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-medium"
+                        style={{ background: '#1a1a2e', color: '#ffffff' }}>
                         <Plus className="w-3.5 h-3.5" /> Adicionar primeiro post
                       </button>
                     </div>
