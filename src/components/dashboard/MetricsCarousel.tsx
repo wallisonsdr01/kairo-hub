@@ -27,46 +27,84 @@ const tooltipStyle = {
   },
 }
 
-// ─── View 1 — Planejamento (4 categorias) ────────────────────────────────────
+// ─── Mini stat pill ───────────────────────────────────────────────────────────
+
+function StatPill({
+  label, value, color,
+}: {
+  label: string
+  value: number | string
+  color?: string
+}) {
+  return (
+    <div className="flex-1 bg-gray-50 rounded-xl px-3 py-2 min-w-0">
+      <p className="text-[10px] text-gray-400 truncate">{label}</p>
+      <p
+        className="text-[17px] font-semibold tabular-nums leading-tight"
+        style={{ color: color ?? '#1a1a2e' }}
+      >
+        {value}
+      </p>
+    </div>
+  )
+}
+
+// ─── View 1 — Planejamento ────────────────────────────────────────────────────
 
 function PlannerBarChart({
   data,
 }: {
   data: { label: string; value: number; color: string }[]
 }) {
-  const hasData = data.some(d => d.value > 0)
+  // Filtra apenas status com valor > 0 para evitar barras invisíveis e espaço vazio
+  const activeData = data.filter(d => d.value > 0)
+  const hasData    = activeData.length > 0
+  const total      = data.reduce((s, d) => s + d.value, 0)
+
+  // Categoria com mais itens
+  const top = activeData.reduce<{ label: string; value: number; color: string } | null>(
+    (best, d) => (best === null || d.value > best.value ? d : best),
+    null,
+  )
+
+  // Contagem de revisão e produção
+  const emRevisao  = data.find(d => d.label === 'Revisão')?.value  ?? 0
+  const emProducao = data.find(d => d.label === 'Produção')?.value ?? 0
 
   if (!hasData) {
     return (
-      <div className="flex items-center justify-center h-[216px]">
+      <div className="flex flex-col items-center justify-center gap-2" style={{ height: 196 }}>
         <p className="text-[12px] text-[#b0b0b0] text-center">
-          Nenhum item no planejamento ainda.<br />
+          Nenhum item no planejamento ainda.
+          <br />
           <span className="text-[11px]">Crie posts em Planejamento.</span>
         </p>
       </div>
     )
   }
 
-  const chartData = data.map(d => ({ name: d.label, value: d.value, fill: d.color }))
-  const total = data.reduce((s, d) => s + d.value, 0)
+  const chartData = activeData.map(d => ({ name: d.label, value: d.value, fill: d.color }))
+  // Barra mais larga quando há menos categorias ativas
+  const barSize = activeData.length <= 3 ? 36 : activeData.length <= 4 ? 28 : 22
 
   return (
-    <div>
-      <ResponsiveContainer width="100%" height={200}>
-        <BarChart data={chartData} barSize={32}>
+    <div className="space-y-3">
+      {/* Gráfico compacto */}
+      <ResponsiveContainer width="100%" height={140}>
+        <BarChart data={chartData} barSize={barSize} margin={{ top: 4, right: 4, left: -8, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" vertical={false} />
           <XAxis
             dataKey="name"
-            tick={{ fill: '#a0a0a0', fontSize: 11 }}
+            tick={{ fill: '#a0a0a0', fontSize: 10 }}
             axisLine={false}
             tickLine={false}
           />
           <YAxis
-            tick={{ fill: '#a0a0a0', fontSize: 11 }}
+            tick={{ fill: '#a0a0a0', fontSize: 10 }}
             axisLine={false}
             tickLine={false}
             allowDecimals={false}
-            width={24}
+            width={20}
           />
           <Tooltip
             {...tooltipStyle}
@@ -79,9 +117,16 @@ function PlannerBarChart({
           </Bar>
         </BarChart>
       </ResponsiveContainer>
-      <p className="text-center text-[11px] text-[#a0a0a0] mt-2">
-        {total} item{total !== 1 ? 's' : ''} no planejamento
-      </p>
+
+      {/* Mini stat pills */}
+      <div className="flex gap-2">
+        <StatPill label="Total" value={total} />
+        {top && (
+          <StatPill label="Maior" value={top.label} color={top.color} />
+        )}
+        <StatPill label="Produção" value={emProducao} color="#3b82f6" />
+        <StatPill label="Revisão"  value={emRevisao}  color="#f59e0b" />
+      </div>
     </div>
   )
 }
@@ -94,31 +139,44 @@ function GeneratedChart({
   data: { day: string; conteudos: number }[]
   summary: string
 }) {
+  const total = data.reduce((s, d) => s + d.conteudos, 0)
+  const topDay = data.reduce<{ day: string; conteudos: number } | null>(
+    (best, d) => (best === null || d.conteudos > best.conteudos ? d : best),
+    null,
+  )
+
   return (
-    <div>
-      <ResponsiveContainer width="100%" height={200}>
-        <BarChart data={data} barSize={28}>
+    <div className="space-y-3">
+      <ResponsiveContainer width="100%" height={140}>
+        <BarChart data={data} barSize={28} margin={{ top: 4, right: 4, left: -8, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" vertical={false} />
           <XAxis
             dataKey="day"
-            tick={{ fill: '#a0a0a0', fontSize: 11 }}
+            tick={{ fill: '#a0a0a0', fontSize: 10 }}
             axisLine={false}
             tickLine={false}
           />
           <YAxis
-            tick={{ fill: '#a0a0a0', fontSize: 11 }}
+            tick={{ fill: '#a0a0a0', fontSize: 10 }}
             axisLine={false}
             tickLine={false}
             allowDecimals={false}
-            width={24}
+            width={20}
           />
           <Tooltip {...tooltipStyle} cursor={{ fill: 'rgba(0,0,0,0.03)' }} />
           <Bar dataKey="conteudos" fill="#1a1a2e" radius={[4, 4, 0, 0]} name="Gerados" />
         </BarChart>
       </ResponsiveContainer>
-      {summary && (
-        <p className="text-center text-[11px] text-[#a0a0a0] mt-2">{summary}</p>
-      )}
+
+      <div className="flex gap-2">
+        <StatPill label="Total" value={total} />
+        <StatPill label="Pico"  value={topDay ? `${topDay.conteudos} (${topDay.day})` : '—'} />
+        {summary && (
+          <div className="flex-1 bg-gray-50 rounded-xl px-3 py-2 flex items-center">
+            <p className="text-[10px] text-gray-400 leading-snug">{summary}</p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -135,28 +193,35 @@ function AssetsDonut({
     name: contentTypeLabels[d.type as ContentType] ?? d.type,
     value: d.count,
   }))
+  const total = data.reduce((s, d) => s + d.count, 0)
 
   if (!chartData.some(d => d.value > 0)) {
     return (
-      <div className="flex items-center justify-center h-[216px]">
+      <div className="flex items-center justify-center" style={{ height: 196 }}>
         <p className="text-[12px] text-[#b0b0b0] text-center">
-          Nenhum conteúdo no arsenal ainda.<br />
+          Nenhum conteúdo no arsenal ainda.
+          <br />
           <span className="text-[11px]">Adicione conteúdos pela Biblioteca.</span>
         </p>
       </div>
     )
   }
 
+  const top = data.reduce<{ type: string; count: number } | null>(
+    (best, d) => (best === null || d.count > best.count ? d : best),
+    null,
+  )
+
   return (
-    <div>
-      <ResponsiveContainer width="100%" height={200}>
+    <div className="space-y-3">
+      <ResponsiveContainer width="100%" height={140}>
         <PieChart>
           <Pie
             data={chartData}
             cx="50%"
             cy="50%"
-            innerRadius={50}
-            outerRadius={74}
+            innerRadius={40}
+            outerRadius={62}
             paddingAngle={2}
             dataKey="value"
           >
@@ -166,17 +231,30 @@ function AssetsDonut({
           </Pie>
           <Legend
             iconType="circle"
-            iconSize={7}
+            iconSize={6}
             formatter={value => (
-              <span style={{ fontSize: 11, color: '#737373' }}>{value}</span>
+              <span style={{ fontSize: 10, color: '#737373' }}>{value}</span>
             )}
           />
           <Tooltip {...tooltipStyle} />
         </PieChart>
       </ResponsiveContainer>
-      {summary && (
-        <p className="text-center text-[11px] text-[#a0a0a0] mt-2">{summary}</p>
-      )}
+
+      <div className="flex gap-2">
+        <StatPill label="Total" value={total} />
+        {top && (
+          <StatPill
+            label="Mais frequente"
+            value={contentTypeLabels[top.type as ContentType] ?? top.type}
+            color="#1a1a2e"
+          />
+        )}
+        {summary && (
+          <div className="flex-1 bg-gray-50 rounded-xl px-3 py-2 flex items-center">
+            <p className="text-[10px] text-gray-400 leading-snug">{summary}</p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -233,25 +311,23 @@ export function MetricsCarousel({
     setSlide(([curr]) => [i, i > curr ? 1 : -1])
 
   const slides = useMemo(() => [
-    // ── Slide 1: Planejamento (4 categorias) ──
+    // ── Slide 1: Planejamento ──
     {
       title:    'Planejamento',
-      subtitle: '4 categorias de status',
-      content: (
-        <PlannerBarChart data={plannerChartData} />
-      ),
+      subtitle: 'Status geral dos conteúdos',
+      content: <PlannerBarChart data={plannerChartData} />,
     },
     // ── Slide 2: Conteúdos gerados ──
     {
       title:    'Conteúdos gerados',
-      subtitle: 'Esta semana por dia',
+      subtitle: 'Período selecionado por dia',
       content: (
         <GeneratedChart
           data={weeklyData}
           summary={
             contentsThisWeek > 0
-              ? `${contentsThisWeek} gerado${contentsThisWeek !== 1 ? 's' : ''} esta semana`
-              : 'Nenhum conteúdo gerado esta semana'
+              ? `${contentsThisWeek} gerado${contentsThisWeek !== 1 ? 's' : ''} no período`
+              : 'Nenhum conteúdo gerado no período'
           }
         />
       ),
@@ -276,9 +352,10 @@ export function MetricsCarousel({
   const slide = slides[activeIdx]
 
   return (
-    <Card className="lg:col-span-2 h-full rounded-3xl border-gray-100 shadow-sm">
-      {/* ── Header with arrows ─────────────────────────────────────────────── */}
-      <CardHeader className="pb-2">
+    // Sem h-full: altura determinada pelo conteúdo, não pela coluna vizinha
+    <Card className="lg:col-span-2 rounded-3xl border-gray-100 shadow-sm">
+      {/* ── Header com setas ───────────────────────────────────────────────── */}
+      <CardHeader className="pb-2 pt-4 px-5">
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}
@@ -316,7 +393,8 @@ export function MetricsCarousel({
           </button>
         </div>
 
-        <div className="flex items-center justify-center gap-1.5 mt-2.5">
+        {/* Dots do carrossel */}
+        <div className="flex items-center justify-center gap-1.5 mt-2">
           {slides.map((_, i) => (
             <button
               key={i}
@@ -332,7 +410,7 @@ export function MetricsCarousel({
         </div>
       </CardHeader>
 
-      <CardContent className="overflow-hidden pt-0">
+      <CardContent className="overflow-hidden pt-0 pb-4 px-5">
         <AnimatePresence mode="wait" custom={dir}>
           <motion.div
             key={activeIdx}
