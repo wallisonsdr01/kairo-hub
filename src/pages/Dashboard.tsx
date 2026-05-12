@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import {
   Users, CheckSquare, Plus, Clock,
   AlertTriangle, TrendingUp, CalendarDays, CheckCircle2,
-  ChevronLeft, ChevronRight, BarChart3, XCircle,
+  ChevronLeft, ChevronRight, BarChart3,
 } from 'lucide-react'
 import { Header } from '@/components/layout/Header'
 import { Button } from '@/components/ui/button'
@@ -408,49 +408,53 @@ function CalendarWidget({ items }: { items: PlannerDay[] }) {
   )
 }
 
-// ─── Alerts Widget (foco em Planejamento) ─────────────────────────────────────
+// ─── Alerts Widget ────────────────────────────────────────────────────────────
 
 function AlertsWidget({
   periodApproved,
   pendingApproval,
-  periodAdjusted,
-  periodRejected,
+  pendingTasks,
+  overdueTasks,
 }: {
   periodApproved:  number
   pendingApproval: number
-  periodAdjusted:  number
-  periodRejected:  number
+  pendingTasks:    number
+  overdueTasks:    number
 }) {
-  const allGood = pendingApproval === 0 && periodRejected === 0 && periodAdjusted === 0
+  const allGood = pendingApproval === 0 && overdueTasks === 0
 
   const rows = [
     {
       icon: CheckCircle2,
-      label: 'Aprovados',
+      label: 'Aprovados no período',
       value: periodApproved,
       color: 'text-emerald-600',
-      bg: 'bg-emerald-50',
+      bg:    'bg-emerald-50',
+      href:  '/planner',
     },
     {
       icon: Clock,
-      label: 'Ag. aprovação',
+      label: 'Aguardando aprovação',
       value: pendingApproval,
-      color: pendingApproval > 0 ? 'text-amber-600'  : 'text-gray-400',
-      bg:    pendingApproval > 0 ? 'bg-amber-50'     : 'bg-gray-50',
+      color: pendingApproval > 0 ? 'text-amber-600' : 'text-gray-400',
+      bg:    pendingApproval > 0 ? 'bg-amber-50'    : 'bg-gray-50',
+      href:  '/planner',
+    },
+    {
+      icon: CheckSquare,
+      label: 'Tarefas em aberto',
+      value: pendingTasks,
+      color: pendingTasks > 0 ? 'text-blue-600' : 'text-gray-400',
+      bg:    pendingTasks > 0 ? 'bg-blue-50'    : 'bg-gray-50',
+      href:  '/tasks',
     },
     {
       icon: AlertTriangle,
-      label: 'Ajustes solicitados',
-      value: periodAdjusted,
-      color: periodAdjusted > 0 ? 'text-orange-500' : 'text-gray-400',
-      bg:    periodAdjusted > 0 ? 'bg-orange-50'    : 'bg-gray-50',
-    },
-    {
-      icon: XCircle,
-      label: 'Reprovados',
-      value: periodRejected,
-      color: periodRejected > 0 ? 'text-red-500'    : 'text-gray-400',
-      bg:    periodRejected > 0 ? 'bg-red-50'       : 'bg-gray-50',
+      label: 'Tarefas atrasadas',
+      value: overdueTasks,
+      color: overdueTasks > 0 ? 'text-red-500' : 'text-gray-400',
+      bg:    overdueTasks > 0 ? 'bg-red-50'    : 'bg-gray-50',
+      href:  '/tasks',
     },
   ]
 
@@ -467,7 +471,7 @@ function AlertsWidget({
       </div>
       <div className="space-y-1.5">
         {rows.map((row, i) => (
-          <Link key={i} to="/planner">
+          <Link key={i} to={row.href}>
             <div className="flex items-center gap-3 p-2.5 rounded-2xl hover:bg-gray-50 transition-colors cursor-pointer">
               <div className={`w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 ${row.bg}`}>
                 <row.icon className={`w-3.5 h-3.5 ${row.color}`} />
@@ -609,12 +613,13 @@ export function Dashboard() {
     setAssetTypes(Object.entries(typeMap).map(([type, count]) => ({ type, count })))
 
     // ── Gráfico de Planejamento: por approval_status, filtrado pelo período ──
-    // Mostra só os 4 grupos de aprovação — coerente com o Resumo lateral
+    // "Ag. aprovação" = null | vazio | 'pendente_aprovacao'  (isPending estrito)
+    // Separado do Resumo que usa isAwaitingApproval (inclui ajuste_realizado)
     setPlannerChartData([
-      { label: 'Pendentes',       value: period_pending_strict, color: '#f59e0b' },
-      { label: 'Aprovados',       value: period_approved,       color: '#10b981' },
-      { label: 'Aj. Solicitado',  value: period_adjusted,       color: '#f97316' },
-      { label: 'Reprovados',      value: period_rejected,       color: '#ef4444' },
+      { label: 'Aprovados',      value: period_approved,       color: '#10b981' },
+      { label: 'Ag. aprovação',  value: period_pending_strict, color: '#f59e0b' },
+      { label: 'Aj. solicitados',value: period_adjusted,       color: '#f97316' },
+      { label: 'Reprovados',     value: period_rejected,       color: '#ef4444' },
     ])
   }
 
@@ -674,8 +679,8 @@ export function Dashboard() {
             <AlertsWidget
               periodApproved={stats.period_approved}
               pendingApproval={stats.period_pending_approval}
-              periodAdjusted={stats.period_adjusted}
-              periodRejected={stats.period_rejected}
+              pendingTasks={stats.pending_tasks}
+              overdueTasks={stats.overdue_tasks}
             />
           </div>
 

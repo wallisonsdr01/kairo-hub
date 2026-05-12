@@ -52,8 +52,8 @@ function PlannerBarChart({ data }: { data: { label: string; value: number; color
     (best, d) => (best === null || d.value > best.value ? d : best), null,
   )
 
-  const pending   = data.find(d => d.label === 'Pendentes')?.value   ?? 0
-  const approved  = data.find(d => d.label === 'Aprovados')?.value   ?? 0
+  const pending   = data.find(d => d.label === 'Ag. aprovação')?.value  ?? 0
+  const approved  = data.find(d => d.label === 'Aprovados')?.value     ?? 0
 
   if (!hasData) {
     return (
@@ -109,8 +109,8 @@ function PlannerBarChart({ data }: { data: { label: string; value: number; color
       <div className="flex gap-2 flex-shrink-0">
         <StatPill label="Total"     value={total} />
         {top && <StatPill label="Maior" value={top.label} color={top.color} />}
-        <StatPill label="Pendentes" value={pending}  color="#f59e0b" />
-        <StatPill label="Aprovados" value={approved} color="#10b981" />
+        <StatPill label="Ag. aprovação" value={pending}  color="#f59e0b" />
+        <StatPill label="Aprovados"     value={approved} color="#10b981" />
       </div>
     </div>
   )
