@@ -944,7 +944,9 @@ export function Planner() {
   // ── Abrir visualização completa do evento ──────────────────────────────────
 
   const openItemView = (item: PlannerItem) => {
-    setSelectedPlannerItem(item)
+    // Sempre usa a versão mais fresca do cache (inclui links e anexos)
+    const fresh = items?.find(i => i.id === item.id) ?? item
+    setSelectedPlannerItem(fresh)
     setItemViewOpen(true)
   }
 
@@ -996,6 +998,10 @@ export function Planner() {
   const handleSave = async () => {
     if (!form.title.trim() || !user) return
     setIsUploading(true)
+    // Se o usuário digitou um link mas não clicou em +, inclui automaticamente
+    const allPendingLinks = linkInput.trim()
+      ? [...pendingLinks, linkInput.trim()]
+      : pendingLinks
     try {
       if (editingItem) {
         await updateItem.mutateAsync({
@@ -1029,9 +1035,9 @@ export function Planner() {
             })
           }
         }
-        if (pendingLinks.length > 0) {
+        if (allPendingLinks.length > 0) {
           await supabase.from('planner_links').insert(
-            pendingLinks.map(url => ({ planner_id: editingItem.id, user_id: user.id, url, label: null }))
+            allPendingLinks.map(url => ({ planner_id: editingItem.id, user_id: user.id, url, label: null }))
           )
         }
         toast('Post atualizado!', 'success')
@@ -1077,9 +1083,9 @@ export function Planner() {
             })
           }
         }
-        if (pendingLinks.length > 0) {
+        if (allPendingLinks.length > 0) {
           await supabase.from('planner_links').insert(
-            pendingLinks.map(url => ({ planner_id: created.id, user_id: user.id, url, label: null }))
+            allPendingLinks.map(url => ({ planner_id: created.id, user_id: user.id, url, label: null }))
           )
         }
         toast('Item adicionado ao planejamento!', 'success')
