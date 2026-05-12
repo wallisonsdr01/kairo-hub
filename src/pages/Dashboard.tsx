@@ -152,6 +152,7 @@ function FilterBar({ mode, range, customRange, onMode, onCustomRange }: FilterBa
           <button
             key={key}
             onClick={() => onMode(key)}
+            style={mode === key ? { color: '#ffffff' } : undefined}
             className={`px-4 py-1.5 rounded-lg text-[12px] font-medium transition-all ${
               mode === key
                 ? 'bg-gray-900 text-white shadow-sm'
@@ -247,19 +248,19 @@ function KpiCard({
   const showWarning = warning && value > 0
 
   const inner = featured ? (
-    <div className="h-full rounded-3xl bg-gray-900 p-5 flex flex-col gap-4 hover:bg-gray-800 transition-colors duration-200">
+    <div className="h-full rounded-3xl bg-gray-900 p-5 flex flex-col gap-4 hover:bg-gray-800 transition-colors duration-200" style={{ color: '#ffffff' }}>
       <div className="flex items-start justify-between">
         <div className="w-10 h-10 rounded-2xl bg-white/10 flex items-center justify-center">
-          <Icon className="w-[18px] h-[18px] text-white" />
+          <Icon className="w-[18px] h-[18px]" style={{ color: '#ffffff' }} />
         </div>
-        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/10 text-white/50 uppercase tracking-wide">
+        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/10 uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.5)' }}>
           Total
         </span>
       </div>
       <div>
-        <p className="text-3xl font-semibold text-white tabular-nums leading-none">{value}</p>
-        <p className="text-[13px] font-medium text-white/70 mt-2 leading-tight">{label}</p>
-        {subtitle && <p className="text-[11px] text-white/40 mt-0.5">{subtitle}</p>}
+        <p className="text-3xl font-semibold tabular-nums leading-none" style={{ color: '#ffffff' }}>{value}</p>
+        <p className="text-[13px] font-medium mt-2 leading-tight" style={{ color: 'rgba(255,255,255,0.7)' }}>{label}</p>
+        {subtitle && <p className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>{subtitle}</p>}
       </div>
     </div>
   ) : (
@@ -284,7 +285,7 @@ function KpiCard({
     </div>
   )
 
-  if (href) return <Link to={href} className="block h-full">{inner}</Link>
+  if (href) return <Link to={href} className="block h-full" style={{ color: 'inherit' }}>{inner}</Link>
   return inner
 }
 
@@ -361,7 +362,10 @@ function CalendarWidget({
                   : 'hover:bg-gray-50 border border-transparent hover:border-gray-100'
               }`}
             >
-              <span className={`text-[15px] font-semibold leading-none ${isCurrent ? 'text-white' : 'text-gray-800'}`}>
+              <span
+                className={`text-[15px] font-semibold leading-none ${isCurrent ? 'text-white' : 'text-gray-800'}`}
+                style={isCurrent ? { color: '#ffffff' } : undefined}
+              >
                 {format(day, 'd')}
               </span>
               {dayItems.length > 0 && (
