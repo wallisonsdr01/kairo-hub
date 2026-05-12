@@ -11,6 +11,7 @@ import {
   Plus, ChevronLeft, ChevronRight, ChevronRight as ChevronRightIcon,
   Save, Paperclip, Link2, X, FileText, ImageIcon, Video, Music, File,
   Building2, Upload, Trash2, Pencil, CalendarDays, ExternalLink, Check,
+  Instagram,
 } from 'lucide-react'
 import {
   format, startOfMonth, endOfMonth, eachDayOfInterval,
@@ -663,46 +664,67 @@ function getApprovalAccent(item: PlannerItem): string {
   }
 }
 
+// ─── Paleta suave por approval_status (fundo do mini-card) ───────────────────
+
+function getApprovalBg(item: PlannerItem): string {
+  if (item.status === 'publicado') return '#ecfdf5'
+  switch (item.approval_status) {
+    case 'aprovado':          return '#dcfce7'
+    case 'ajuste_solicitado': return '#fff7ed'
+    case 'ajuste_realizado':  return '#eff6ff'
+    case 'reprovado':         return '#fef2f2'
+    default:                  return '#fefce8' // pendente_aprovacao
+  }
+}
+
 function CalendarCard({ item, disabled, onOpen }: { item: PlannerItem; disabled: boolean; onOpen: () => void }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: item.id, disabled })
   const accent = getApprovalAccent(item)
-  const thumb = item.attachments?.find(a => a.file_type.startsWith('image/'))
+  const bg     = getApprovalBg(item)
 
   return (
     <div
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      style={{ touchAction: 'none', opacity: isDragging ? 0.2 : 1, borderLeftColor: accent }}
+      style={{
+        touchAction: 'none',
+        opacity: isDragging ? 0.2 : 1,
+        borderLeftColor: accent,
+        backgroundColor: bg,
+      }}
       onClick={e => { e.stopPropagation(); onOpen() }}
-      className={`w-full rounded-[4px] border border-gray-200 border-l-[3px] bg-white shadow-sm overflow-hidden transition-all hover:shadow-md select-none
+      className={`w-full rounded-[4px] border border-transparent border-l-[3px] shadow-sm overflow-hidden transition-all hover:shadow-md select-none
         ${disabled ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'}`}
     >
-      {/* Thumbnail compacta — apenas sm+ */}
-      {thumb && (
-        <img
-          src={thumb.file_url}
-          alt=""
-          className="hidden sm:block w-full object-cover"
-          style={{ height: 44 }}
-          draggable={false}
-        />
-      )}
-      <div className="px-1 sm:px-1.5 py-0.5">
-        <p className="text-[8px] sm:text-[9px] font-semibold text-gray-800 truncate leading-tight">{item.title}</p>
-        {/* Desktop: chip de tipo */}
-        <div className="hidden sm:block mt-0.5">
+      {/* ── Desktop: card completo ── */}
+      <div className="hidden sm:block px-1.5 py-1 space-y-0.5">
+        {/* Linha 1: ícone Instagram + tipo de conteúdo */}
+        <div className="flex items-center gap-1">
+          <Instagram className="w-2.5 h-2.5 flex-shrink-0" style={{ color: '#e1306c' }} />
           <span
-            className="text-[7px] px-1 py-0.5 rounded font-semibold"
-            style={{ backgroundColor: `${accent}18`, color: accent }}
+            className="text-[7px] px-1 py-0.5 rounded font-semibold truncate max-w-[80px]"
+            style={{ backgroundColor: `${accent}22`, color: accent }}
           >
             {contentTypeLabels[item.content_type as ContentType]}
           </span>
         </div>
-        {/* Mobile: ponto colorido */}
-        <div className="flex sm:hidden items-center gap-0.5 mt-0.5">
-          <div className="w-1 h-1 rounded-full flex-shrink-0" style={{ backgroundColor: accent }} />
-        </div>
+
+        {/* Linha 2: título */}
+        <p className="text-[9px] font-semibold text-gray-800 truncate leading-tight">
+          {item.title}
+        </p>
+
+        {/* Linha 3: status de produção */}
+        <span className={`text-[7px] font-medium leading-none ${statusTextColors[item.status as PlannerStatus]}`}>
+          {statusLabels[item.status as PlannerStatus]}
+        </span>
+      </div>
+
+      {/* ── Mobile: compacto (ponto + título) ── */}
+      <div className="flex sm:hidden items-center gap-0.5 px-1 py-0.5">
+        <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: accent }} />
+        <p className="text-[8px] font-semibold text-gray-800 truncate leading-tight">{item.title}</p>
       </div>
     </div>
   )
