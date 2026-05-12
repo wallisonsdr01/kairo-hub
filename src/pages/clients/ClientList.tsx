@@ -181,10 +181,10 @@ export function ClientList() {
           </div>
           <Link
             to="/clients/new"
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium text-white transition-colors"
-            style={{ background: '#1a1a2e' }}
-            onMouseEnter={e => (e.currentTarget.style.background = '#252550')}
-            onMouseLeave={e => (e.currentTarget.style.background = '#1a1a2e')}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium transition-colors"
+            style={{ background: '#1a1a2e', color: '#ffffff' }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#252550'; e.currentTarget.style.color = '#ffffff' }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#1a1a2e'; e.currentTarget.style.color = '#ffffff' }}
           >
             <Plus className="w-4 h-4" /> Novo Cliente
           </Link>
@@ -286,8 +286,10 @@ export function ClientList() {
             {!search && (
               <Link
                 to="/clients/new"
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium text-white mt-2"
-                style={{ background: '#1a1a2e' }}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-medium mt-2"
+                style={{ background: '#1a1a2e', color: '#ffffff' }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#252550'; e.currentTarget.style.color = '#ffffff' }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#1a1a2e'; e.currentTarget.style.color = '#ffffff' }}
               >
                 <Plus className="w-4 h-4" /> Novo Cliente
               </Link>
