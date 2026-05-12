@@ -153,7 +153,7 @@ function ChecklistEditor({
               item.done ? 'bg-[#1a1a2e] border-[#1a1a2e]' : 'border-[#d0d0d0] hover:border-[#a0a0a0]'
             }`}
           >
-            {item.done && <Check className="w-2.5 h-2.5" style={{ color: '#ffffff' }} />}
+            {item.done && <Check className="w-2.5 h-2.5 text-white" />}
           </button>
           <input
             ref={el => { inputRefs.current[idx] = el }}
@@ -325,7 +325,7 @@ function NoteModal({
             >
               {t === 'texto' ? 'Texto' : 'Checklist'}
               {t === 'checklist' && checklist.length > 0 && (
-                <span className="ml-1.5 text-[10px] bg-[#1a1a2e] rounded-full px-1.5 py-0.5" style={{ color: '#ffffff' }}>
+                <span className="ml-1.5 text-[10px] bg-[#1a1a2e] text-white rounded-full px-1.5 py-0.5">
                   {checklist.filter(i => i.done).length}/{checklist.length}
                 </span>
               )}
@@ -393,8 +393,7 @@ function NoteModal({
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-1.5 text-[13px] font-medium px-4 py-2 rounded-xl bg-[#1a1a2e] hover:bg-[#252550] transition-colors disabled:opacity-50"
-            style={{ color: '#ffffff' }}
+            className="flex items-center gap-1.5 text-[13px] font-medium px-4 py-2 rounded-xl bg-[#1a1a2e] hover:bg-[#252550] text-white transition-colors disabled:opacity-50"
           >
             {saving ? 'Salvando...' : 'Salvar'}
           </button>
@@ -493,10 +492,9 @@ export function Notes() {
           <FilterBar filter={filter} clients={clients} onChange={setFilter} />
           <button
             onClick={() => setSelected('new')}
-            className="flex items-center gap-2 text-[13px] font-medium px-4 py-2.5 rounded-xl bg-[#1a1a2e] hover:bg-[#252550] transition-colors"
-            style={{ color: '#ffffff' }}
+            className="flex items-center gap-2 text-[13px] font-medium px-4 py-2.5 rounded-xl bg-[#1a1a2e] hover:bg-[#252550] text-white transition-colors"
           >
-            <Plus className="w-4 h-4" style={{ color: '#ffffff' }} />
+            <Plus className="w-4 h-4 text-white" />
             Nova nota
           </button>
         </div>
@@ -530,10 +528,9 @@ export function Notes() {
             {!(filter.client_id || filter.type || filter.origin) && (
               <button
                 onClick={() => setSelected('new')}
-                className="flex items-center gap-2 text-[13px] font-medium px-4 py-2.5 rounded-xl bg-[#1a1a2e] hover:bg-[#252550] transition-colors mt-2"
-                style={{ color: '#ffffff' }}
+                className="flex items-center gap-2 text-[13px] font-medium px-4 py-2.5 rounded-xl bg-[#1a1a2e] hover:bg-[#252550] text-white transition-colors mt-2"
               >
-                <Plus className="w-4 h-4" style={{ color: '#ffffff' }} />
+                <Plus className="w-4 h-4 text-white" />
                 Criar nota
               </button>
             )}

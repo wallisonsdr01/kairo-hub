@@ -61,8 +61,7 @@ export function Header({ title, subtitle, action, dark = true }: HeaderProps) {
             <Bell className={`w-4 h-4 ${dark ? 'text-white/70' : 'text-[#737373]'}`} />
             {unreadCount > 0 && (
               <span
-                className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full bg-red-500 text-[9px] font-bold flex items-center justify-center px-0.5 leading-none"
-                style={{ color: '#ffffff' }}
+                className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full bg-red-500 text-[9px] font-bold flex items-center justify-center px-0.5 leading-none text-white"
               >
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
@@ -77,7 +76,7 @@ export function Header({ title, subtitle, action, dark = true }: HeaderProps) {
             <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold ${
               dark ? 'bg-white/15 border border-white/20' : 'bg-[#1a1a2e] border border-[#1a1a2e]'
             }`}>
-              <span style={{ color: '#ffffff' }}>{avatarInitial}</span>
+              <span className="text-white">{avatarInitial}</span>
             </div>
           </div>
         </div>
