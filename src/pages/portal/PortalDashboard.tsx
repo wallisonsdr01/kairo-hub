@@ -174,12 +174,12 @@ function ItemDetailView({
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
   const [pendingAction, setPendingAction] = useState<ApprovalStatus | null>(null)
 
-  // Reset local state whenever a different item is opened
+  // Reset local state whenever the item changes (different id OR status updated externally)
   useEffect(() => {
     setLocalStatus((item.approval_status || 'pendente_aprovacao') as ApprovalStatus)
     setSuccessMsg(null)
     setPendingAction(null)
-  }, [item.id])
+  }, [item.id, item.approval_status])
 
   const handleApproval = async (status: ApprovalStatus) => {
     setPendingAction(status)
@@ -390,19 +390,22 @@ function PortalPlannerView({
 }) {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [hover, setHover] = useState<HoverState | null>(null)
-  const [dayItems, setDayItems] = useState<PlannerItem[]>([])
   const [dayDate, setDayDate] = useState<Date | null>(null)
   const [dayOpen, setDayOpen] = useState(false)
-  const [selectedItem, setSelectedItem] = useState<PlannerItem | null>(null)
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
   const [itemOpen, setItemOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 640)
+
+  // Derivados ao vivo — nunca ficam stale após invalidação da query
+  const selectedItem = selectedItemId ? (items.find(i => i.id === selectedItemId) ?? null) : null
+  const dayItems = dayDate ? items.filter(i => isSameDay(parseISO(i.scheduled_date), dayDate)) : []
 
   // Auto-abrir item ao receber autoOpenItemId (vindo de notificação)
   useEffect(() => {
     if (!autoOpenItemId || !items.length) return
     const found = items.find(i => i.id === autoOpenItemId)
     if (found) {
-      setSelectedItem(found)
+      setSelectedItemId(found.id)
       setItemOpen(true)
       onItemAutoOpened?.()
     }
@@ -425,7 +428,6 @@ function PortalPlannerView({
   const handleDayClick = (day: Date, di: PlannerItem[]) => {
     if (di.length === 0) return
     setDayDate(day)
-    setDayItems(di)
     setDayOpen(true)
     setHover(null)
   }
@@ -537,7 +539,7 @@ function PortalPlannerView({
               return (
                 <div
                   key={item.id}
-                  onClick={() => { setDayOpen(false); setSelectedItem(item); setItemOpen(true) }}
+                  onClick={() => { setDayOpen(false); setSelectedItemId(item.id); setItemOpen(true) }}
                   className="flex items-start gap-3 p-3 bg-white border border-[#e8e8e8] rounded-xl cursor-pointer hover:bg-[#f5f5f5] hover:border-[#d0d0d0] transition-colors group"
                 >
                   {thumb && (
@@ -590,7 +592,7 @@ function PortalPlannerView({
         <ItemDetailView
           item={selectedItem}
           open={itemOpen}
-          onClose={() => { setItemOpen(false); setSelectedItem(null) }}
+          onClose={() => { setItemOpen(false); setSelectedItemId(null) }}
         />
       )}
     </div>
@@ -684,8 +686,11 @@ function ClientDashboardTab({
   firstName: string
   payments: Array<{ status: string; payment_date: string }>
 }) {
-  const [selectedItem, setSelectedItem] = useState<PlannerItem | null>(null)
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
   const [itemOpen, setItemOpen] = useState(false)
+
+  // Derivado ao vivo — reflete sempre o dado mais fresco da query
+  const selectedItem = selectedItemId ? (plannerItems.find(i => i.id === selectedItemId) ?? null) : null
 
   const today = startOfToday()
 
@@ -783,7 +788,7 @@ function ClientDashboardTab({
           </div>
           {pendingItems.length > 0 && (
             <button
-              onClick={() => { setSelectedItem(pendingItems[0]); setItemOpen(true) }}
+              onClick={() => { setSelectedItemId(pendingItems[0].id); setItemOpen(true) }}
               className="hidden sm:flex items-center gap-2 flex-shrink-0 px-4 py-2.5 rounded-xl bg-amber-100 border border-amber-200 text-amber-700 text-[12px] font-semibold hover:bg-amber-200 transition-all"
             >
               Revisar agora <ArrowRight className="w-3.5 h-3.5" />
@@ -792,7 +797,7 @@ function ClientDashboardTab({
         </div>
         {pendingItems.length > 0 && (
           <button
-            onClick={() => { setSelectedItem(pendingItems[0]); setItemOpen(true) }}
+            onClick={() => { setSelectedItemId(pendingItems[0].id); setItemOpen(true) }}
             className="sm:hidden mt-4 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-100 border border-amber-200 text-amber-700 text-[12px] font-semibold hover:bg-amber-200 transition-all"
           >
             Revisar agora <ArrowRight className="w-3.5 h-3.5" />
@@ -871,7 +876,7 @@ function ClientDashboardTab({
                   return (
                     <button
                       key={item.id}
-                      onClick={() => { setSelectedItem(item); setItemOpen(true) }}
+                      onClick={() => { setSelectedItemId(item.id); setItemOpen(true) }}
                       className="w-full flex items-center gap-3.5 px-5 py-3.5 hover:bg-amber-500/20 transition-colors text-left group"
                     >
                       {thumb ? (
@@ -1027,7 +1032,7 @@ function ClientDashboardTab({
                   return (
                     <button
                       key={item.id}
-                      onClick={() => { setSelectedItem(item); setItemOpen(true) }}
+                      onClick={() => { setSelectedItemId(item.id); setItemOpen(true) }}
                       className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#f5f5f5] transition-colors text-left group"
                     >
                       <div className="w-9 flex-shrink-0 text-center">
@@ -1132,7 +1137,7 @@ function ClientDashboardTab({
         <ItemDetailView
           item={selectedItem}
           open={itemOpen}
-          onClose={() => { setItemOpen(false); setSelectedItem(null) }}
+          onClose={() => { setItemOpen(false); setSelectedItemId(null) }}
         />
       )}
     </div>

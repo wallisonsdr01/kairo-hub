@@ -43,7 +43,10 @@ export function useUpdatePlannerItem() {
       if (error) throw error
       return data as PlannerItem
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['planner'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['planner'] })
+      qc.invalidateQueries({ queryKey: ['portal-planner'] })
+    },
   })
 }
 

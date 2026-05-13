@@ -46,6 +46,8 @@ export function usePortalPlanner() {
       return data as PlannerItem[]
     },
     enabled: isClient,
+    refetchInterval: 15_000,
+    refetchIntervalInBackground: false,
   })
 }
 
